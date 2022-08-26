@@ -1,0 +1,7 @@
+apiVersion: "wilda.fr/v1"
+kind: ReleaseDetector
+metadata:
+  name: check-quarkus
+spec:
+  organisation: philippart-s
+  repository: hello-world-from-quarkus

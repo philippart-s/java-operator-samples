@@ -190,3 +190,237 @@ spec:
   - la sortie de l'opérateur devrait afficher le message `INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler) 👋 Hello, World 🌏 ! From the Moon 🌕 ! `
   - supprimer la CR : `kubectl delete releasedetectors.wilda.fr hello-world -n test-hello-world-operator`
   - la sortie de l'opérateur devrait afficher le message `INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler) 🥲  Goodbye, World 🌏 ! From the Moon 🌕 !`
+
+## 👀  Release detection
+ - la branche `04-release-detection` contient le résultat de cette étape
+ - ajouter les dépendances suivantes dans le pom.xml:
+```xml
+  <!-- To call GH API-->
+  <dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-rest-client</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-rest-client-jackson</artifactId>
+  </dependency>
+``` 
+  - créer le POJO `GitHubRelease.java`:
+```java
+public class GitHubRelease {
+  /**
+   * ID of the response
+   */
+  private long responseId;
+
+  /**
+   * Release tag name.
+   */
+  @JsonProperty("tag_name")
+  private String tagName;
+
+  public String getTagName() {
+    return tagName;
+  }
+
+  public void setTagName(String tagName) {
+    this.tagName = tagName;
+  }
+}
+```
+  - créer le service `GHService.java`:
+```java
+@Path("/repos")
+@RegisterRestClient
+public interface GHService {
+
+    @GET
+    @Path("/{owner}/{repo}/releases/latest")
+    GitHubRelease getByOrgaAndRepo(@PathParam(value = "owner") String owner, @PathParam(value = "repo") String repo);
+}
+```
+ - modifier le fichier `application.properties`:
+```properties
+quarkus.container-image.build=true
+#quarkus.container-image.group=
+quarkus.container-image.name=java-operator-samples-operator
+# set to true to automatically apply CRDs to the cluster when they get regenerated
+quarkus.operator-sdk.crd.apply=false
+# set to true to automatically generate CSV from your code
+quarkus.operator-sdk.generate-csv=false
+# GH Service parameter
+quarkus.rest-client."fr.wilda.util.GHService".url=https://api.github.com 
+quarkus.rest-client."fr.wilda.util.GHService".scope=javax.inject.Singleton 
+```
+ - modifier la partie _spec_ de la CRD en modifiant la classe `ReleaseDetectorSpec`:
+```java
+public class ReleaseDetectorSpec {
+    /**
+     * Name of the organisation (or owner) where find the repository
+     */
+    private String organisation;
+    /**
+     * The repository name.
+     */
+    private String repository;
+
+    
+    public String getOrganisation() {
+        return organisation;
+    }
+    public void setOrganisation(String organisation) {
+        this.organisation = organisation;
+    }
+    public String getRepository() {
+        return repository;
+    }
+    public void setRepository(String repository) {
+        this.repository = repository;
+    }
+}
+```
+ - modifier la partie _status_ de la CRD en modifiant la classe `ReleaseDetectorStatus`:
+```java
+public class ReleaseDetectorStatus {
+
+    /**
+     * Last release version deployed on the cluster.
+     */
+    private String deployedRelase;
+
+    public String getDeployedRelase() {
+        return deployedRelase;
+    }
+
+    public void setDeployedRelase(String deployedRelase) {
+        this.deployedRelase = deployedRelase;
+    }
+}
+```
+  - update the reconciler `ReleaseDetectorReconciler.java`:
+```java
+public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
+    Cleaner<ReleaseDetector>, EventSourceInitializer<ReleaseDetector> {
+  private static final Logger log = LoggerFactory.getLogger(ReleaseDetectorReconciler.class);
+
+  /**
+   * Name of the repository to check.
+   */
+  private String repoName;
+  /**
+   * GitHub organisation name that contains the repository.
+   */
+  private String organisationName;
+  /**
+   * ID of the created custom resource.
+   */
+  private ResourceID resourceID;
+  /**
+   * Current deployed release.
+   */
+  private String currentRelease;
+  /**
+   * Fabric0 kubernetes client.
+   */
+  private final KubernetesClient client;
+
+  @Inject
+  @RestClient
+  private GHService ghService;
+
+  public ReleaseDetectorReconciler(KubernetesClient client) {
+    this.client = client;
+  }
+
+  @Override
+  public Map<String, EventSource> prepareEventSources(EventSourceContext<ReleaseDetector> context) {
+    var poolingEventSource = new PollingEventSource<String, ReleaseDetector>(() -> {
+      log.info("⚡️ Polling data !");
+      if (resourceID != null) {
+        log.info("🚀 Fetch resources !");
+        log.info("🐙 Get the last release version of repository {} in organisation {}.",
+            organisationName, repoName);
+        GitHubRelease gitHubRelease = ghService.getByOrgaAndRepo(organisationName, repoName);
+        log.info("🏷  Last release is {}", gitHubRelease.getTagName());
+        currentRelease = gitHubRelease.getTagName();
+        return Map.of(resourceID, Set.of(currentRelease));
+      } else {
+        log.info("🚫 No resource created, nothing to do.");
+        return Map.of();
+      }
+    }, 30000, String.class);
+
+    return EventSourceInitializer.nameEventSources(poolingEventSource);
+  }
+
+  @Override
+  public UpdateControl<ReleaseDetector> reconcile(ReleaseDetector resource, Context context) {
+    log.info("⚡️ Event occurs ! Reconcile called.");
+
+    // Get configuration
+    resourceID = ResourceID.fromResource(resource);
+    repoName = resource.getSpec().getRepository();
+    organisationName = resource.getSpec().getOrganisation();
+    log.info("⚙️ Configuration values : repository = {}, organisation = {}.", repoName,
+        organisationName);
+
+    // Update the status
+    if (resource.getStatus() != null) {
+      resource.getStatus().setDeployedRelase(currentRelease);
+    } else {
+      resource.setStatus(new ReleaseDetectorStatus());
+    }
+
+    return UpdateControl.noUpdate();
+  }
+
+  @Override
+  public DeleteControl cleanup(ReleaseDetector resource, Context<ReleaseDetector> context) {
+    log.info("🗑 Undeploy the application");
+
+    resourceID = null;
+
+    return DeleteControl.defaultDelete();
+  }
+}
+```
+  - créer la CR de tests `cr-test-gh-release-watch.yml`:
+```yaml
+apiVersion: "fr.wilda/v1"
+kind: ReleaseDetector
+metadata:
+  name: check-quarkus
+spec:
+  organisation: philippart-s
+  repository: hello-world-from-quarkus
+```
+  - une fois Quarkus rechargé la sortie des logs devrait être de la forme:
+```bash
+INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-4) ⚡️ Polling data !
+INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-4) 🚫 No resource created, nothing to do.
+INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-4) ⚡️ Polling data !
+INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-4) 🚫 No resource created, nothing to do.
+INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-4) ⚡️ Polling data !
+INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-4) 🚫 No resource created, nothing to do.
+```
+  - créer la custom resource de tests `src/test/resources/cr-test-gh-release-watch.yml`:
+```yaml
+apiVersion: "wilda.fr/v1"
+kind: ReleaseDetector
+metadata:
+  name: check-quarkus
+spec:
+  organisation: philippart-s
+  repository: hello-world-from-quarkus
+``` 
+  - puis la créer sur le cluster: `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-hello-world-operator`
+  - les logs devraient être de la forme:
+```bash
+INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler) ⚡️ Event occurs ! Reconcile called.
+INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler) ⚙️ Configuration values : repository = hello-world-from-quarkus, organisation = philippart-s.
+INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-6) ⚡️ Polling data !
+INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-6) 🚀 Fetch resources !
+INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-6) 🐙 Get the last release version of repository philippart-s in organisation hello-world-from-quarkus.
+INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-6) 🏷  Last release is 1.0.0
+```
+  - supprimer la CR créée : `kubectl delete releasedetectors.wilda.fr check-quarkus -n test-hello-world-operator`
