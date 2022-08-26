@@ -1,0 +1,6 @@
+apiVersion: "wilda.fr/v1"
+kind: ReleaseDetector
+metadata:
+  name: hello-world
+spec:
+  name: the Moon 🌕 !

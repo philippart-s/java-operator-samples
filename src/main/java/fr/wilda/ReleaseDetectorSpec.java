@@ -2,5 +2,13 @@ package fr.wilda;
 
 public class ReleaseDetectorSpec {
 
-    // Add Spec information here
+    private String name;
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
 }

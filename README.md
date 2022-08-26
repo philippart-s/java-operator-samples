@@ -94,3 +94,99 @@ NAME                        CREATED AT
 
 releasedetectors.wilda.fr   2022-08-26T15:40:19Z
 ```
+
+## 📝  CRD auto apply
+ - la branche `03-auto-apply-crd` contient le résultat de cette étape
+ - ajouter un champ `name` dans `ReleaseDetectorSpec.java`:
+```java
+public class ReleaseDetectorSpec {
+    private String name;
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+}
+```
+  - vérifier que la CRD a bien été mise à jour:
+```bash
+$ kubectl get crds releasedetectors.wilda.fr -o yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: "2022-08-26T15:40:19Z"
+  generation: 2
+  name: releasedetectors.wilda.fr
+  resourceVersion: "34895268741"
+  uid: 7b60bbb5-da03-46e5-baab-a576a303ebdd
+spec:
+  conversion:
+    strategy: None
+  group: wilda.fr
+  names:
+    kind: ReleaseDetector
+    listKind: ReleaseDetectorList
+    plural: releasedetectors
+    singular: releasedetector
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            properties:
+              name:
+                type: string
+            type: object
+          status:
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+```
+ - modifier le reconciler `ReleaseDetectorReconciler.java`:
+```java
+public class ReleaseDetectorReconciler
+    implements Reconciler<ReleaseDetector>, Cleaner<ReleaseDetector> {
+  private static final Logger log = LoggerFactory.getLogger(ReleaseDetectorReconciler.class);
+  private final KubernetesClient client;
+
+  public ReleaseDetectorReconciler(KubernetesClient client) {
+    this.client = client;
+  }
+
+  @Override
+  public UpdateControl<ReleaseDetector> reconcile(ReleaseDetector resource, Context context) {
+    log.info("👋 Hello, World 🌏 ! From {} ", resource.getSpec().getName());
+
+    return UpdateControl.noUpdate();
+  }
+
+  @Override
+  public DeleteControl cleanup(ReleaseDetector resource, Context<ReleaseDetector> context) {
+    log.info("🥲  Goodbye, World 🌏 ! From {}", resource.getSpec().getName());
+
+    return DeleteControl.defaultDelete();
+  }
+}    
+```
+  - créer le namespace `test-hello-world-operator`: `kubectl create ns test-hello-world-operator`
+  - créer la CR `src/test/resources/cr-test-hello-world.yaml` pour tester:
+```yaml
+apiVersion: "wilda.fr/v1"
+kind: ReleaseDetector
+metadata:
+  name: hello-world
+spec:
+  name: the Moon 🌕 !
+```
+  - créer la CR dans Kubernetes : `kubectl apply -f ./src/test/resources/cr-test-hello-world.yaml -n test-hello-world-operator`
+  - la sortie de l'opérateur devrait afficher le message `INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler) 👋 Hello, World 🌏 ! From the Moon 🌕 ! `
+  - supprimer la CR : `kubectl delete releasedetectors.wilda.fr hello-world -n test-hello-world-operator`
+  - la sortie de l'opérateur devrait afficher le message `INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler) 🥲  Goodbye, World 🌏 ! From the Moon 🌕 !`
