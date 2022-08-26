@@ -2,4 +2,11 @@ domain: wilda.fr
 layout:
 - quarkus.javaoperatorsdk.io/v1-alpha
 projectName: java-operator-samples
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: wilda.fr
+  kind: ReleaseDetector
+  version: v1
 version: "3"

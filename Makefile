@@ -1,4 +1,8 @@
 
+VERSION ?= 0.0.1
+IMAGE_TAG_BASE ?= wilda.fr/java-operator-samples
+BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
+
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
 
@@ -41,3 +45,18 @@ deploy: ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
 	kubectl delete -f target/kubernetes/kubernetes.yml
+
+##@Bundle
+.PHONY: bundle
+bundle:  ## Generate bundle manifests and metadata, then validate generated files.
+## marker
+	cat target/kubernetes/releasedetectors.wilda.fr-v1.yml target/kubernetes/kubernetes.yml | operator-sdk generate bundle -q --overwrite --version 0.1.1 --default-channel=stable --channels=stable --package=java-operator-samples
+	operator-sdk bundle validate ./bundle
+	
+.PHONY: bundle-build
+bundle-build: ## Build the bundle image.
+	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+	
+.PHONY: bundle-push
+bundle-push: ## Push the bundle image.
+	docker push $(BUNDLE_IMG)
