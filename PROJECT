@@ -1,0 +1,5 @@
+domain: wilda.fr
+layout:
+- quarkus.javaoperatorsdk.io/v1-alpha
+projectName: java-operator-samples
+version: "3"
