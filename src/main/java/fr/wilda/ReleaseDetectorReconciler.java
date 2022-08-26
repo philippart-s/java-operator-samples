@@ -6,9 +6,16 @@ import javax.inject.Inject;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import fr.wilda.util.GHService;
 import fr.wilda.util.GitHubRelease;
+import io.fabric8.kubernetes.api.model.IntOrString;
+import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.ServiceBuilder;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.internal.SerializationUtils;
 import io.javaoperatorsdk.operator.api.reconciler.Cleaner;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.DeleteControl;
@@ -78,6 +85,8 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
   public UpdateControl<ReleaseDetector> reconcile(ReleaseDetector resource, Context context) {
     log.info("⚡️ Event occurs ! Reconcile called.");
 
+    String namespace = resource.getMetadata().getNamespace();
+
     // Get configuration
     resourceID = ResourceID.fromResource(resource);
     repoName = resource.getSpec().getRepository();
@@ -85,11 +94,26 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
     log.info("⚙️ Configuration values : repository = {}, organisation = {}.", repoName,
         organisationName);
 
-    // Update the status
-    if (resource.getStatus() != null) {
-      resource.getStatus().setDeployedRelase(currentRelease);
-    } else {
-      resource.setStatus(new ReleaseDetectorStatus());
+    if (currentRelease != null && currentRelease.trim().length() != 0) {
+      // Deploy appllication
+      log.info("🔀 Deploy the new release {} !", currentRelease);
+      Deployment deployment = makeDeployment(currentRelease, resource);
+      client.apps().deployments().inNamespace(namespace).createOrReplace(deployment);
+
+      // Create service
+      Service service = makeService(resource);
+      Service existingService = client.services().inNamespace(resource.getMetadata().getNamespace())
+          .withName(service.getMetadata().getName()).get();
+      if (existingService == null) {
+        client.services().inNamespace(namespace).createOrReplace(service);
+      }
+
+      // Update the status
+      if (resource.getStatus() != null) {
+        resource.getStatus().setDeployedRelase(currentRelease);
+      } else {
+        resource.setStatus(new ReleaseDetectorStatus());
+      }
     }
 
     return UpdateControl.noUpdate();
@@ -103,6 +127,85 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
 
     return DeleteControl.defaultDelete();
   }
+
+  /**
+   * Generate the Kubernetes deployment resource.
+   * @param currentRelease The release to deploy
+   * @param releaseDetector The created custom resource
+   * @return The created deployment
+   */
+  private Deployment makeDeployment(String currentRelease, ReleaseDetector releaseDetector) {
+    Deployment deployment = new DeploymentBuilder()
+    .withNewMetadata()
+      .withName("quarkus-deployment")
+      .addToLabels("app", "quarkus")
+      .endMetadata()
+    .withNewSpec()
+      .withReplicas(1)
+      .withNewSelector()
+        .withMatchLabels(Map.of("app", "quarkus"))
+      .endSelector()
+      .withNewTemplate()
+        .withNewMetadata()
+          .addToLabels("app","quarkus")
+        .endMetadata()
+        .withNewSpec()
+          .addNewContainer()
+            .withName("quarkus")
+            .withImage("wilda/" + repoName + ":" + currentRelease)
+            .addNewPort()
+              .withContainerPort(80)
+            .endPort()
+          .endContainer()
+        .endSpec()
+      .endTemplate()
+    .endSpec()
+    .build();
+
+    deployment.addOwnerReference(releaseDetector);
+
+    try {
+      log.info("Generated deployment {}", SerializationUtils.dumpAsYaml(deployment));
+    } catch (JsonProcessingException e) {
+      log.error("Unable to get YML");
+      e.printStackTrace();
+    }
+
+    return deployment;
+  }
+
+  /**
+   * Generate the Kubernetes service resource.
+   * 
+   * @param releaseDetector The custom resource
+   * @return The service.
+   */
+  private Service makeService(ReleaseDetector releaseDetector) {
+    Service service = new ServiceBuilder()
+    .withNewMetadata()
+      .withName("quarkus-service")
+      .addToLabels("app", "quarkus")
+    .endMetadata()
+    .withNewSpec()
+      .withType("NodePort")
+      .withSelector(Map.of("app", "quarkus"))
+      .addNewPort()
+        .withPort(80)
+        .withTargetPort(new IntOrString(8080))
+        .withNodePort(30080)
+      .endPort()
+    .endSpec()
+    .build();
+    
+    service.addOwnerReference(releaseDetector);
+
+    try {
+      log.info("Generated service {}", SerializationUtils.dumpAsYaml(service));
+    } catch (JsonProcessingException e) {
+      log.error("Unable to get YML");
+      e.printStackTrace();
+    }
+
+    return service;
+  }  
 }
-
-
