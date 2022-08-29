@@ -719,44 +719,6 @@ quarkus.rest-client."fr.wilda.util.GHService".scope=javax.inject.Singleton
 # Kubernetes options
 quarkus.kubernetes.namespace=java-operator-samples-operator
 ```
- - ajouter un fichier `src/main/kubernetes/kubernetes.yml` contenant la définition des _ClusterRole_ / _ClusterRoleBinding_ spécifiques à l'opérateur:
-```yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-    name: service-deployment-cluster-role
-    namespace: cloud-ouest-java-operator
-rules:
-  - apiGroups:
-    - ""
-    resources:
-    - secrets
-    - serviceaccounts
-    - services  
-    verbs:
-    - "*"
-  - apiGroups:
-    - "apps"
-    verbs:
-        - "*"
-    resources:
-    - deployments
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: service-deployment-cluster-role-binding
-  namespace: cloud-ouest-java-operator
-roleRef:
-  kind: ClusterRole
-  apiGroup: rbac.authorization.k8s.io
-  name: service-deployment-cluster-role
-subjects:
-  - kind: ServiceAccount
-    name: cloud-ouest-java-operator
-    namespace: cloud-ouest-java-operator
----
-```
 - lancer le packaging : `mvn clean package`
 - vérifier que l'image a bien été générée: : `docker images | grep java-operator-samples-operator`:
 ```bash
