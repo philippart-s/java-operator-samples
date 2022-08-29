@@ -699,3 +699,109 @@ $ kubectl get pods,svc -n test-hello-world-operator
 
 No resources found in test-hello-world-operator namespace.
 ```
+
+## 🐳  Packaging & deployment to K8s
+ - la branche `06-deploy-operator` contient le résultat de cette étape
+ - arrêter le mode dev de Quarkus
+ - modifier le fichier `application.properties`:
+```properties
+# Image options
+quarkus.container-image.build=true
+quarkus.container-image.group=wilda
+quarkus.container-image.name=java-operator-samples-operator
+# set to true to automatically apply CRDs to the cluster when they get regenerated
+quarkus.operator-sdk.crd.apply=false
+# set to true to automatically generate CSV from your code
+quarkus.operator-sdk.generate-csv=false
+# GH Service parameter
+quarkus.rest-client."fr.wilda.util.GHService".url=https://api.github.com 
+quarkus.rest-client."fr.wilda.util.GHService".scope=javax.inject.Singleton 
+# Kubernetes options
+quarkus.kubernetes.namespace=java-operator-samples-operator
+```
+ - ajouter un fichier `src/main/kubernetes/kubernetes.yml` contenant la définition des _ClusterRole_ / _ClusterRoleBinding_ spécifiques à l'opérateur:
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+    name: service-deployment-cluster-role
+    namespace: cloud-ouest-java-operator
+rules:
+  - apiGroups:
+    - ""
+    resources:
+    - secrets
+    - serviceaccounts
+    - services  
+    verbs:
+    - "*"
+  - apiGroups:
+    - "apps"
+    verbs:
+        - "*"
+    resources:
+    - deployments
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: service-deployment-cluster-role-binding
+  namespace: cloud-ouest-java-operator
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: service-deployment-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: cloud-ouest-java-operator
+    namespace: cloud-ouest-java-operator
+---
+```
+- lancer le packaging : `mvn clean package`
+- vérifier que l'image a bien été générée: : `docker images | grep java-operator-samples-operator`:
+```bash
+wilda/java-operator-samples-operator                 0.0.1-SNAPSHOT         cffe16ca153c   54 seconds ago   417MB
+```
+- push de l'image : `docker login` && `docker push wilda/java-operator-samples-operator:0.0.1-SNAPSHOT`
+- si nécessaire, créer le namespace `test-java-operator-samples`: `kubectl create ns test-java-operator-samples`
+- si nécessaire, créer le namespace `java-operator-samples-operator`: `kubectl create ns java-operator-samples-operator`
+- si nécessaire créer la CRD: `kubectl apply -f ./target/kubernetes/releasedetectors.wilda.fr-v1.yml`
+- appliquer le manifest créé : `kubectl apply -f ./target/kubernetes/kubernetes.yml`
+- vérifier que tout va bien:
+```bash
+$ kubectl get pod -n java-operator-samples-operator
+
+NAME                                             READY   STATUS    RESTARTS   AGE
+java-operator-samples-operator-8b9cf6766-q6mns   1/1     Running   0          42s   
+```
+```bash
+$ kubectl logs java-operator-samples-operator-8b9cf6766-q6mns -n java-operator-samples-operator
+
+ --/ __ \/ / / / _ | / _ \/ //_/ / / / __/ 
+ -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \   
+--\___\_\____/_/ |_/_/|_/_/|_|\____/___/   
+2022-08-29 09:28:34,410 WARN  [io.qua.config] (main) Unrecognized configuration key "quarkus.operator-sdk.generate-csv" was provided; it will be ignored; verify that the dependency extension for this configuration is set or that you did not make a typo
+2022-08-29 09:28:36,673 INFO  [io.qua.ope.run.OperatorProducer] (main) Quarkus Java Operator SDK extension 4.0.0 (commit: abfa719 on branch: abfa71954a61b9fab0c7561bff68d85c3037f369) built on Sun Aug 14 20:20:17 GMT 2022
+2022-08-29 09:28:36,941 INFO  [io.jav.ope.Operator] (main) Registered reconciler: 'releasedetectorreconciler' for resource: 'class fr.wilda.ReleaseDetector' for namespace(s): [all namespaces]
+2022-08-29 09:28:36,943 INFO  [io.qua.ope.run.AppEventListener] (main) Starting operator.
+2022-08-29 09:28:36,943 INFO  [io.jav.ope.Operator] (main) Operator SDK 3.1.1 (commit: 719d5b4) built on Thu Aug 04 21:05:10 GMT 2022 starting...
+2022-08-29 09:28:36,943 INFO  [io.jav.ope.Operator] (main) Client version: 5.12.3
+2022-08-29 09:28:36,946 INFO  [io.jav.ope.pro.Controller] (main) Starting 'releasedetectorreconciler' controller for reconciler: fr.wilda.ReleaseDetectorReconciler_ClientProxy, resource: fr.wilda.ReleaseDetector
+2022-08-29 09:28:37,906 INFO  [fr.wil.ReleaseDetectorReconciler] (main) ⚡️ Polling data !
+2022-08-29 09:28:37,907 INFO  [fr.wil.ReleaseDetectorReconciler] (main) 🚫 No resource created, nothing to do.
+2022-08-29 09:28:37,910 INFO  [io.jav.ope.pro.Controller] (main) 'releasedetectorreconciler' controller started, pending event sources initialization
+2022-08-29 09:28:38,059 INFO  [io.quarkus] (main) java-operator-samples 0.0.1-SNAPSHOT on JVM (powered by Quarkus 2.11.2.Final) started in 4.449s. Listening on: http://0.0.0.0:8080
+2022-08-29 09:28:38,060 INFO  [io.quarkus] (main) Profile prod activated. 
+2022-08-29 09:28:38,061 INFO  [io.quarkus] (main) Installed features: [cdi, kubernetes, kubernetes-client, micrometer, openshift-client, operator-sdk, rest-client, rest-client-jackson, smallrye-context-propagation, smallrye-health, vertx]
+2022-08-29 09:29:07,910 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-1) ⚡️ Polling data !
+2022-08-29 09:29:07,911 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-1) 🚫 No resource created, nothing to do.
+```
+  - tester l'opérateur en créant une CR: `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yaml -n test-java-operator-samples`
+  - constater que l'opérateur n'arrive pas à créer l'application dans le namespace:
+```bash
+Caused by: io.fabric8.kubernetes.client.KubernetesClientException: Failure executing: POST at: https://10.3.0.1/apis/apps/v1/namespaces/test-jav │
+│ a-operator-samples/deployments. Message: Forbidden!Configured service account doesn't have access. Service account may have been revoked. deploy │
+│ ments.apps is forbidden: User "system:serviceaccount:java-operator-samples-operator:java-operator-samples-operator" cannot create resource "depl │
+│ oyments" in API group "apps" in the namespace "test-java-operator-samples".       
+```
+- supprimer la CR: `kubectl delete releasedetectors.wilda.fr check-quarkus -n test-java-operator-samples`
