@@ -758,7 +758,7 @@ $ kubectl logs java-operator-samples-operator-8b9cf6766-q6mns -n java-operator-s
 2022-08-29 09:29:07,910 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-1) ⚡️ Polling data !
 2022-08-29 09:29:07,911 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-1) 🚫 No resource created, nothing to do.
 ```
-  - tester l'opérateur en créant une CR: `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yaml -n test-java-operator-samples`
+  - tester l'opérateur en créant une CR: `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-java-operator-samples`
   - constater que l'opérateur n'arrive pas à créer l'application dans le namespace:
 ```bash
 Caused by: io.fabric8.kubernetes.client.KubernetesClientException: Failure executing: POST at: https://10.3.0.1/apis/apps/v1/namespaces/test-jav │
