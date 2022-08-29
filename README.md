@@ -758,7 +758,7 @@ $ kubectl logs java-operator-samples-operator-8b9cf6766-q6mns -n java-operator-s
 2022-08-29 09:29:07,910 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-1) ⚡️ Polling data !
 2022-08-29 09:29:07,911 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-1) 🚫 No resource created, nothing to do.
 ```
-  - tester l'opérateur en créant une CR: `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yaml -n test-java-operator-samples`
+  - tester l'opérateur en créant une CR: `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-java-operator-samples`
   - constater que l'opérateur n'arrive pas à créer l'application dans le namespace:
 ```bash
 Caused by: io.fabric8.kubernetes.client.KubernetesClientException: Failure executing: POST at: https://10.3.0.1/apis/apps/v1/namespaces/test-jav │
@@ -767,3 +767,74 @@ Caused by: io.fabric8.kubernetes.client.KubernetesClientException: Failure execu
 │ oyments" in API group "apps" in the namespace "test-java-operator-samples".       
 ```
 - supprimer la CR: `kubectl delete releasedetectors.wilda.fr check-quarkus -n test-java-operator-samples`
+
+## 🔐 Configure security
+  - la branche `07-add-security` contient le résultat de cette étape
+  - ajouter un fichier `src/main/kubernetes/kubernetes.yml` contenant la définition des _ClusterRole_ / _ClusterRoleBinding_ spécifiques à l'opérateur:
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+    name: service-deployment-cluster-role
+    namespace: java-operator-samples-operator
+rules:
+  - apiGroups:
+    - ""
+    resources:
+    - secrets
+    - serviceaccounts
+    - services  
+    verbs:
+    - "*"
+  - apiGroups:
+    - "apps"
+    verbs:
+        - "*"
+    resources:
+    - deployments
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: service-deployment-cluster-role-binding
+  namespace: java-operator-samples-operator
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: service-deployment-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: java-operator-samples-operator
+    namespace: java-operator-samples-operator
+---
+```
+  - lancer le packaging : `mvn clean package`
+  - appliquer le manifest créé : `kubectl apply -f ./target/kubernetes/kubernetes.yml`
+  - vérifier que tout va bien:
+```bash
+$ kubectl get pod -n java-operator-samples-operator
+
+NAME                                             READY   STATUS    RESTARTS   AGE
+java-operator-samples-operator-756d7c45d9-zlwls   1/1     Running   0          42s   
+```
+  - tester l'opérateur en créant une CR: `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-java-operator-samples`
+  - valider que l'application a bien été déployée : `kubectl get pods,svc -n test-java-operator-samples`:
+```bash
+$ kubectl get pods,svc -n test-java-operator-samples
+
+NAME                                      READY   STATUS    RESTARTS   AGE
+pod/quarkus-deployment-7b74f6b6ff-dcdkl   1/1     Running   0          66s
+
+NAME                      TYPE       CLUSTER-IP    EXTERNAL-IP   PORT(S)        AGE
+service/quarkus-service   NodePort   10.3.14.182   <none>        80:30080/TCP   66s
+```
+  - tester l'application:
+```bash
+$ curl http://<cluster adress>:30080/hello
+
+👋 Hello, World ! 🌍
+```
+  - supprimer la CR: `kubectl delete releasedetectors.wilda.fr check-quarkus -n test-java-operator-samples`
+  - supprimer l'opérateur si souhaité: `kubectl delete -f ./target/kubernetes/kubernetes.yml`
+  - supprimer les namespaces: `kubectl delete ns test-java-operator-samples java-operator-samples-operator test-hello-world-operator`
+  - supprimer la crd: `kubectl delete crds/releasedetectors.wilda.fr`
