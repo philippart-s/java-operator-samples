@@ -810,7 +810,8 @@ subjects:
     namespace: java-operator-samples-operator
 ---
 ```
-  - lancer le packaging : `mvn clean package`
+  - (optionnel) mettre la propriété `quarkus.container-image.build` à `false` pour ne pas régénérer l'image
+  - lancer le packaging : `mvn clean package` 
   - appliquer le manifest créé : `kubectl apply -f ./target/kubernetes/kubernetes.yml`
   - vérifier que tout va bien:
 ```bash
@@ -832,7 +833,7 @@ service/quarkus-service   NodePort   10.3.14.182   <none>        80:30080/TCP   
 ```
   - tester l'application:
 ```bash
-$ curl http://<cluster adress>:30080/hello
+$ curl http://http://xxxx.nodes.c1.xxx.k8s.ovh.net:30080/hello
 
 👋 Hello, World ! 🌍
 ```
