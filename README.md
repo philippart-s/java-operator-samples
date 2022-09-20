@@ -403,6 +403,7 @@ INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-4) 🚫 No resource created, not
 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-4) ⚡️ Polling data !
 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-4) 🚫 No resource created, nothing to do.
 ```
+  - créer le namespace de test : `kubectl create ns test-quarkus-release-operator`
   - créer la custom resource de tests `src/test/resources/cr-test-gh-release-watch.yml`:
 ```yaml
 apiVersion: "wilda.fr/v1"
@@ -413,7 +414,7 @@ spec:
   organisation: philippart-s
   repository: hello-world-from-quarkus
 ``` 
-  - puis la créer sur le cluster: `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-hello-world-operator`
+  - puis la créer sur le cluster: `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-quarkus-release-operator`
   - les logs devraient être de la forme:
 ```bash
 INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler) ⚡️ Event occurs ! Reconcile called.
@@ -423,4 +424,4 @@ INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-6) 🚀 Fetch resources !
 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-6) 🐙 Get the last release version of repository philippart-s in organisation hello-world-from-quarkus.
 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-6) 🏷  Last release is 1.0.0
 ```
-  - supprimer la CR créée : `kubectl delete releasedetectors.wilda.fr check-quarkus -n test-hello-world-operator`
+  - supprimer la CR créée : `kubectl delete releasedetectors.wilda.fr check-quarkus -n test-quarkus-release-operator`
