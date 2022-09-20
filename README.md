@@ -403,7 +403,7 @@ INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-4) 🚫 No resource created, not
 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-4) ⚡️ Polling data !
 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-4) 🚫 No resource created, nothing to do.
 ```
-  - créer le namespace de test : `kubectl create ns test-quarkus-release-operator`
+  - créer le namespace de test : `kubectl create ns test-java-operator-samples`
   - créer la custom resource de tests `src/test/resources/cr-test-gh-release-watch.yml`:
 ```yaml
 apiVersion: "wilda.fr/v1"
@@ -414,7 +414,7 @@ spec:
   organisation: philippart-s
   repository: hello-world-from-quarkus
 ``` 
-  - puis la créer sur le cluster: `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-quarkus-release-operator`
+  - puis la créer sur le cluster: `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-java-operator-samples`
   - les logs devraient être de la forme:
 ```bash
 INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler) ⚡️ Event occurs ! Reconcile called.
@@ -424,7 +424,8 @@ INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-6) 🚀 Fetch resources !
 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-6) 🐙 Get the last release version of repository philippart-s in organisation hello-world-from-quarkus.
 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-6) 🏷  Last release is 1.0.0
 ```
-   - supprimer la CR créée : `kubectl delete releasedetectors.wilda.fr check-quarkus -n test-quarkus-release-operator`
+- supprimer la CR créée : `kubectl delete releasedetectors.wilda.fr check-quarkus -n test-java-operator-samples`
+
 ## 🔀 Deploy application
   - la branche `05-deploy-app` contient le résultat de cette étape
   - modifier le reconciler `ReleaseDetectorReconciler`:
@@ -612,7 +613,7 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
   }  
 }
 ```
-  - recréer la CR : `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-quarkus-release-operator`
+  - recréer la CR : `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-java-operator-samples`
   - la sortie de l'opérateur devrait être:
 ```bash
 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-8) 🚀 Fetch resources !
@@ -679,7 +680,7 @@ INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-8) 🏷  Last release is 1.0.4
 ```
   - vérifier que l'application a été déployée:
 ```bash
-$ kubectl get pods,svc -n test-quarkus-release-operator
+$ kubectl get pods,svc -n test-java-operator-samples
 
 NAME                                      READY   STATUS    RESTARTS   AGE
 pod/quarkus-deployment-7b74f6b6ff-2rffc   1/1     Running   0          98s
@@ -693,10 +694,10 @@ $ curl http://http://xxxx.nodes.c1.xxx.k8s.ovh.net:30080/hello
 
 👋  Hello, World ! 🌍
 ```
-  - supprimer la CR: `kubectl delete releasedetectors.wilda.fr check-quarkus -n test-quarkus-release-operator`
+  - supprimer la CR: `kubectl delete releasedetectors.wilda.fr check-quarkus -n test-java-operator-samples`
   - vérifier que tout a été supprimé:
 ```bash
-$ kubectl get pods,svc -n test-quarkus-release-operator
+$ kubectl get pods,svc -n test-java-operator-samples
 
 No resources found in test-hello-world-operator namespace.
 ```
