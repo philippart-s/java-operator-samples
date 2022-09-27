@@ -116,7 +116,7 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
       }
     }
 
-    return UpdateControl.noUpdate();
+    return UpdateControl.patchStatus(resource);
   }
 
   @Override
