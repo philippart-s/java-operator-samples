@@ -92,7 +92,7 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
       resource.setStatus(new ReleaseDetectorStatus());
     }
 
-    return UpdateControl.noUpdate();
+    return UpdateControl.patchStatus(resource);
   }
 
   @Override

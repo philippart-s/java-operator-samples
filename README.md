@@ -112,42 +112,16 @@ public class ReleaseDetectorSpec {
 ```
   - vérifier que la CRD a bien été mise à jour:
 ```bash
-$ kubectl get crds releasedetectors.wilda.fr -o yaml
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  creationTimestamp: "2022-08-26T15:40:19Z"
-  generation: 2
-  name: releasedetectors.wilda.fr
-  resourceVersion: "34895268741"
-  uid: 7b60bbb5-da03-46e5-baab-a576a303ebdd
-spec:
-  conversion:
-    strategy: None
-  group: wilda.fr
-  names:
-    kind: ReleaseDetector
-    listKind: ReleaseDetectorList
-    plural: releasedetectors
-    singular: releasedetector
-  scope: Namespaced
-  versions:
-  - name: v1
-    schema:
-      openAPIV3Schema:
-        properties:
-          spec:
-            properties:
-              name:
-                type: string
-            type: object
-          status:
-            type: object
-        type: object
-    served: true
-    storage: true
-    subresources:
-      status: {}
+$ kubectl get crds releasedetectors.wilda.fr -o json | jq '.spec.versions[0].schema.openAPIV3Schema.properties.spec'
+
+{
+  "properties": {
+    "name": {
+      "type": "string"
+    }
+  },
+  "type": "object"
+}
 ```
  - modifier le reconciler `ReleaseDetectorReconciler.java`:
 ```java
@@ -370,7 +344,7 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
       resource.setStatus(new ReleaseDetectorStatus());
     }
 
-    return UpdateControl.noUpdate();
+    return UpdateControl.patchStatus(resource);
   }
 
   @Override
