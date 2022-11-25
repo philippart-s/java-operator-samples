@@ -3,4 +3,4 @@ kind: ReleaseDetector
 metadata:
   name: hello-world
 spec:
-  name: the Moon 🌕 !
+  name: the Moon 🌕!
