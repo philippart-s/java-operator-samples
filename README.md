@@ -712,24 +712,24 @@ java-operator-samples-operator-8b9cf6766-q6mns   1/1     Running   0          42
 ```bash
 $ kubectl logs java-operator-samples-operator-8b9cf6766-q6mns -n java-operator-samples-operator
 
+__  ____  __  _____   ___  __ ____  ______ 
  --/ __ \/ / / / _ | / _ \/ //_/ / / / __/ 
  -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \   
 --\___\_\____/_/ |_/_/|_/_/|_|\____/___/   
-2022-08-29 09:28:34,410 WARN  [io.qua.config] (main) Unrecognized configuration key "quarkus.operator-sdk.generate-csv" was provided; it will be ignored; verify that the dependency extension for this configuration is set or that you did not make a typo
-2022-08-29 09:28:36,673 INFO  [io.qua.ope.run.OperatorProducer] (main) Quarkus Java Operator SDK extension 4.0.0 (commit: abfa719 on branch: abfa71954a61b9fab0c7561bff68d85c3037f369) built on Sun Aug 14 20:20:17 GMT 2022
-2022-08-29 09:28:36,941 INFO  [io.jav.ope.Operator] (main) Registered reconciler: 'releasedetectorreconciler' for resource: 'class fr.wilda.ReleaseDetector' for namespace(s): [all namespaces]
-2022-08-29 09:28:36,943 INFO  [io.qua.ope.run.AppEventListener] (main) Starting operator.
-2022-08-29 09:28:36,943 INFO  [io.jav.ope.Operator] (main) Operator SDK 3.1.1 (commit: 719d5b4) built on Thu Aug 04 21:05:10 GMT 2022 starting...
-2022-08-29 09:28:36,943 INFO  [io.jav.ope.Operator] (main) Client version: 5.12.3
-2022-08-29 09:28:36,946 INFO  [io.jav.ope.pro.Controller] (main) Starting 'releasedetectorreconciler' controller for reconciler: fr.wilda.ReleaseDetectorReconciler_ClientProxy, resource: fr.wilda.ReleaseDetector
-2022-08-29 09:28:37,906 INFO  [fr.wil.ReleaseDetectorReconciler] (main) ⚡️ Polling data !
-2022-08-29 09:28:37,907 INFO  [fr.wil.ReleaseDetectorReconciler] (main) 🚫 No resource created, nothing to do.
-2022-08-29 09:28:37,910 INFO  [io.jav.ope.pro.Controller] (main) 'releasedetectorreconciler' controller started, pending event sources initialization
-2022-08-29 09:28:38,059 INFO  [io.quarkus] (main) java-operator-samples 0.0.1-SNAPSHOT on JVM (powered by Quarkus 2.11.2.Final) started in 4.449s. Listening on: http://0.0.0.0:8080
-2022-08-29 09:28:38,060 INFO  [io.quarkus] (main) Profile prod activated. 
-2022-08-29 09:28:38,061 INFO  [io.quarkus] (main) Installed features: [cdi, kubernetes, kubernetes-client, micrometer, openshift-client, operator-sdk, rest-client, rest-client-jackson, smallrye-context-propagation, smallrye-health, vertx]
-2022-08-29 09:29:07,910 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-1) ⚡️ Polling data !
-2022-08-29 09:29:07,911 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-1) 🚫 No resource created, nothing to do.
+2022-11-25 16:43:37,795 INFO  [io.qua.ope.run.OperatorProducer] (main) Quarkus Java Operator SDK extension 4.0.3 (commit: d88d41d on branch: d88d41d78baf198fa4e69d1205f9d19ee04d8c60) built on Thu Oct 06 20:26:39 GMT 2022
+2022-11-25 16:43:38,182 INFO  [io.jav.ope.Operator] (main) Registered reconciler: 'releasedetectorreconciler' for resource: 'class fr.wilda.ReleaseDetector' for namespace(s): [all namespaces]
+2022-11-25 16:43:38,183 INFO  [io.qua.ope.run.AppEventListener] (main) Starting operator.
+2022-11-25 16:43:38,184 INFO  [io.jav.ope.Operator] (main) Operator SDK 3.2.3 (commit: 9bb3f07) built on Fri Sep 30 14:18:27 GMT 2022 starting...
+2022-11-25 16:43:38,184 INFO  [io.jav.ope.Operator] (main) Client version: 5.12.4
+2022-11-25 16:43:38,186 INFO  [io.jav.ope.pro.Controller] (main) Starting 'releasedetectorreconciler' controller for reconciler: fr.wilda.ReleaseDetectorReconciler_ClientProxy, resource: fr.wilda.ReleaseDetector
+2022-11-25 16:43:38,935 INFO  [fr.wil.ReleaseDetectorReconciler] (main) ⚡️ Polling data !
+2022-11-25 16:43:38,937 INFO  [fr.wil.ReleaseDetectorReconciler] (main) 🚫 No resource created, nothing to do.
+2022-11-25 16:43:38,941 INFO  [io.jav.ope.pro.Controller] (main) 'releasedetectorreconciler' controller started, pending event sources initialization
+2022-11-25 16:43:39,100 INFO  [io.quarkus] (main) java-operator-samples 0.0.1-SNAPSHOT on JVM (powered by Quarkus 2.13.1.Final) started in 4.279s. Listening on: http://0.0.0.0:8080
+2022-11-25 16:43:39,101 INFO  [io.quarkus] (main) Profile prod activated. 
+2022-11-25 16:43:39,101 INFO  [io.quarkus] (main) Installed features: [cdi, kubernetes, kubernetes-client, micrometer, openshift-client, operator-sdk, rest-client, rest-client-jackson, smallrye-context-propagation, smallrye-health, vertx]
+2022-11-25 16:44:08,939 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-1) ⚡️ Polling data !
+2022-11-25 16:44:08,941 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-1) 🚫 No resource created, nothing to do.
 ```
   - tester l'opérateur en créant une CR: `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-java-operator-samples`
   - constater que l'opérateur n'arrive pas à créer l'application dans le namespace:
