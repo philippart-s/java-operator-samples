@@ -421,6 +421,6 @@ INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler
 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-6) ⚡️ Polling data !
 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-6) 🚀 Fetch resources !
 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-6) 🐙 Get the last release version of repository philippart-s in organisation hello-world-from-quarkus.
-INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-6) 🏷  Last release is 1.0.0
+INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-6) 🏷  Last release is 1.0.4
 ```
   - supprimer la CR créée : `kubectl delete releasedetectors.wilda.fr check-quarkus -n test-java-operator-samples`
