@@ -20,14 +20,14 @@ public class ReleaseDetectorReconciler
 
   @Override
   public UpdateControl<ReleaseDetector> reconcile(ReleaseDetector resource, Context context) {
-    log.info("👋 Hello, World 🌏 ! From {} ", resource.getSpec().getName());
+    log.info("👋 Hello, World 🌏! From {} ", resource.getSpec().getName());
 
     return UpdateControl.noUpdate();
   }
 
   @Override
   public DeleteControl cleanup(ReleaseDetector resource, Context<ReleaseDetector> context) {
-    log.info("🥲  Goodbye, World 🌏 ! From {}", resource.getSpec().getName());
+    log.info("🥲  Goodbye, World 🌏! From {}", resource.getSpec().getName());
 
     return DeleteControl.defaultDelete();
   }

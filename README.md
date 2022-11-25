@@ -162,14 +162,14 @@ public class ReleaseDetectorReconciler
 
   @Override
   public UpdateControl<ReleaseDetector> reconcile(ReleaseDetector resource, Context context) {
-    log.info("👋 Hello, World 🌏 ! From {} ", resource.getSpec().getName());
+    log.info("👋 Hello, World 🌏! From {} ", resource.getSpec().getName());
 
     return UpdateControl.noUpdate();
   }
 
   @Override
   public DeleteControl cleanup(ReleaseDetector resource, Context<ReleaseDetector> context) {
-    log.info("🥲  Goodbye, World 🌏 ! From {}", resource.getSpec().getName());
+    log.info("🥲  Goodbye, World 🌏! From {}", resource.getSpec().getName());
 
     return DeleteControl.defaultDelete();
   }
@@ -183,9 +183,9 @@ kind: ReleaseDetector
 metadata:
   name: hello-world
 spec:
-  name: the Moon 🌕 !
+  name: the Moon 🌕!
 ```
   - créer la CR dans Kubernetes : `kubectl apply -f ./src/test/resources/cr-test-hello-world.yaml -n test-hello-world-operator`
-  - la sortie de l'opérateur devrait afficher le message `INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler) 👋 Hello, World 🌏 ! From the Moon 🌕 ! `
+  - la sortie de l'opérateur devrait afficher le message `INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler) 👋 Hello, World 🌏! From the Moon 🌕!`
   - supprimer la CR : `kubectl delete releasedetectors.wilda.fr hello-world -n test-hello-world-operator`
-  - la sortie de l'opérateur devrait afficher le message `INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler) 🥲  Goodbye, World 🌏 ! From the Moon 🌕 !`
+  - la sortie de l'opérateur devrait afficher le message `INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler) 🥲  Goodbye, World 🌏! From the Moon 🌕!`
