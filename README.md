@@ -233,16 +233,14 @@ public interface GHService {
 ```
  - modifier le fichier `application.properties`:
 ```properties
-quarkus.container-image.build=false
+quarkus.container-image.build=true
 #quarkus.container-image.group=
 quarkus.container-image.name=java-operator-samples-operator
 # set to true to automatically apply CRDs to the cluster when they get regenerated
-quarkus.operator-sdk.crd.apply=false
-# set to true to automatically generate CSV from your code
-quarkus.operator-sdk.generate-csv=false
+quarkus.operator-sdk.crd.apply=true
 # GH Service parameter
 quarkus.rest-client."fr.wilda.util.GHService".url=https://api.github.com 
-quarkus.rest-client."fr.wilda.util.GHService".scope=javax.inject.Singleton 
+quarkus.rest-client."fr.wilda.util.GHService".scope=javax.inject.Singleton
 ```
  - modifier la partie _spec_ de la CRD en modifiant la classe `ReleaseDetectorSpec`:
 ```java
