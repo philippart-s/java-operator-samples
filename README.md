@@ -19,6 +19,16 @@ Source code with exemples of Kubernetes operators developed with the Java langua
 │       └── resources
 │           └── application.properties
 ```
+ - ℹ pour utiliser la dernière version de JOSDK et de l'extension il faut mettre à jour à la main les dépendances (`5.1.1` / `2.16.4.Final` au moement de l'écriture de ce tuto): 
+```xml
+  <!-- ... -->
+  <properties>
+    <!-- ... -->
+    <quarkus-sdk.version>5.1.1</quarkus-sdk.version>
+    <quarkus.version>2.16.4.Final</quarkus.version>
+  </properties>
+  <!-- ... -->
+```
  - vérification que cela compile : `mvn clean compile`
  - tester le lancement: `mvn quarkus:dev`:
 ```bash
@@ -26,11 +36,13 @@ __  ____  __  _____   ___  __ ____  ______
  --/ __ \/ / / / _ | / _ \/ //_/ / / / __/ 
  -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \   
 --\___\_\____/_/ |_/_/|_/_/|_|\____/___/   
-2022-11-25 16:25:58,525 INFO  [io.qua.ope.run.OperatorProducer] (Quarkus Main Thread) Quarkus Java Operator SDK extension 4.0.3 (commit: d88d41d on branch: d88d41d78baf198fa4e69d1205f9d19ee04d8c60) built on Thu Oct 06 22:26:39 CEST 2022
-2022-11-25 16:25:58,530 WARN  [io.qua.ope.run.AppEventListener] (Quarkus Main Thread) No Reconciler implementation was found so the Operator was not started.
-2022-11-25 16:25:58,588 INFO  [io.quarkus] (Quarkus Main Thread) java-operator-samples 0.0.1-SNAPSHOT on JVM (powered by Quarkus 2.13.1.Final) started in 2.250s. Listening on: http://localhost:8080
-2022-11-25 16:25:58,589 INFO  [io.quarkus] (Quarkus Main Thread) Profile dev activated. Live Coding activated.
-2022-11-25 16:25:58,589 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, kubernetes, kubernetes-client, micrometer, openshift-client, operator-sdk, smallrye-context-propagation, smallrye-health, vertx]
+2023-03-14 15:05:13,721 INFO  [io.qua.ope.run.ConfigurationServiceRecorder] (Quarkus Main Thread) Leader election deactivated for dev profile
+
+2023-03-14 15:05:14,611 INFO  [io.qua.ope.run.OperatorProducer] (Quarkus Main Thread) Quarkus Java Operator SDK extension 5.1.1 (commit: 14a149c on branch: 14a149cea9fd57f14c9a6251411dca00d3807011) built on Thu Mar 02 20:32:32 UTC 2023
+2023-03-14 15:05:14,620 WARN  [io.qua.ope.run.AppEventListener] (Quarkus Main Thread) No Reconciler implementation was found so the Operator was not started.
+2023-03-14 15:05:14,780 INFO  [io.quarkus] (Quarkus Main Thread) java-operator-samples 0.0.1-SNAPSHOT on JVM (powered by Quarkus 2.16.4.Final) started in 8.303s. Listening on: http://localhost:8080
+2023-03-14 15:05:14,782 INFO  [io.quarkus] (Quarkus Main Thread) Profile dev activated. Live Coding activated.
+2023-03-14 15:05:14,783 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, kubernetes, kubernetes-client, micrometer, openshift-client, operator-sdk, smallrye-context-propagation, smallrye-health, vertx]
 ```
 
 ## 📄 CRD generation
@@ -48,13 +60,13 @@ src
     │           ├── ReleaseDetectorSpec.java
     │           └── ReleaseDetectorStatus.java
 ```
-  - désactiver, pour l'instant, la création de l'image :
+  - activer la mise à jour automatique de la CRD:
 ```properties
-quarkus.container-image.build=false
+quarkus.container-image.build=true
 #quarkus.container-image.group=
 quarkus.container-image.name=java-operator-samples-operator
 # set to true to automatically apply CRDs to the cluster when they get regenerated
-quarkus.operator-sdk.crd.apply=false
+quarkus.operator-sdk.crd.apply=true
 ```
   - tester que tout compile que la CRD se génère bien: `mvn clean package` (ou restez en mode `mvn quarkus:dev` pour voir la magie opérer en direct :wink:)
   - ⚠️ Il se peut que vous ayez une erreur de la forme : 
@@ -101,8 +113,8 @@ NAME                        CREATED AT
 releasedetectors.wilda.fr   2022-08-26T15:40:19Z
 ```
 
-## 📝  CRD auto apply
- - la branche `03-auto-apply-crd` contient le résultat de cette étape
+## 👋 Hello,World!
+ - la branche `03-hello-world` contient le résultat de cette étape
  - ajouter un champ `name` dans `ReleaseDetectorSpec.java`:
 ```java
 public class ReleaseDetectorSpec {
@@ -221,16 +233,14 @@ public interface GHService {
 ```
  - modifier le fichier `application.properties`:
 ```properties
-quarkus.container-image.build=false
+quarkus.container-image.build=true
 #quarkus.container-image.group=
 quarkus.container-image.name=java-operator-samples-operator
 # set to true to automatically apply CRDs to the cluster when they get regenerated
-quarkus.operator-sdk.crd.apply=false
-# set to true to automatically generate CSV from your code
-quarkus.operator-sdk.generate-csv=false
+quarkus.operator-sdk.crd.apply=true
 # GH Service parameter
 quarkus.rest-client."fr.wilda.util.GHService".url=https://api.github.com 
-quarkus.rest-client."fr.wilda.util.GHService".scope=javax.inject.Singleton 
+quarkus.rest-client."fr.wilda.util.GHService".scope=javax.inject.Singleton
 ```
  - modifier la partie _spec_ de la CRD en modifiant la classe `ReleaseDetectorSpec`:
 ```java
@@ -508,6 +518,7 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
 
   /**
    * Generate the Kubernetes deployment resource.
+   * 
    * @param currentRelease The release to deploy
    * @param releaseDetector The created custom resource
    * @return The created deployment
@@ -517,7 +528,7 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
     .withNewMetadata()
       .withName("quarkus-deployment")
       .addToLabels("app", "quarkus")
-      .endMetadata()
+    .endMetadata()
     .withNewSpec()
       .withReplicas(1)
       .withNewSelector()
@@ -525,7 +536,7 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
       .endSelector()
       .withNewTemplate()
         .withNewMetadata()
-          .addToLabels("app","quarkus")
+          .addToLabels("app", "quarkus")
         .endMetadata()
         .withNewSpec()
           .addNewContainer()
@@ -542,12 +553,7 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
 
     deployment.addOwnerReference(releaseDetector);
 
-    try {
-      log.info("Generated deployment {}", SerializationUtils.dumpAsYaml(deployment));
-    } catch (JsonProcessingException e) {
-      log.error("Unable to get YML");
-      e.printStackTrace();
-    }
+    log.info("Generated deployment {}", Serialization.asYaml(deployment));
 
     return deployment;
   }
@@ -574,18 +580,13 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
       .endPort()
     .endSpec()
     .build();
-    
+
     service.addOwnerReference(releaseDetector);
 
-    try {
-      log.info("Generated service {}", SerializationUtils.dumpAsYaml(service));
-    } catch (JsonProcessingException e) {
-      log.error("Unable to get YML");
-      e.printStackTrace();
-    }
+    log.info("Generated service {}", Serialization.asYaml(service));
 
     return service;
-  }  
+  } 
 }
 ```
   - recréer la CR : `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-java-operator-samples`
@@ -678,9 +679,9 @@ No resources found in test-hello-world-operator namespace.
 ```
 
 ## 🐳  Packaging & deployment to K8s
- - la branche `06-deploy-operator` contient le résultat de cette étape
- - arrêter le mode dev de Quarkus
- - modifier le fichier `application.properties`:
+  - la branche `06-deploy-operator` contient le résultat de cette étape
+  - arrêter le mode dev de Quarkus
+  - modifier le fichier `application.properties`:
 ```properties
 # Image options
 quarkus.container-image.build=true
@@ -693,17 +694,24 @@ quarkus.rest-client."fr.wilda.util.GHService".scope=javax.inject.Singleton
 quarkus.kubernetes.namespace=java-operator-samples-operator
 quarkus.kubernetes.namespace=java-operator-samples-operator
 ```
-- lancer le packaging : `mvn clean package` ou `sudo env "PATH=$PATH" mvn clean package` si votre client docker nécessitedes droits admin
-- vérifier que l'image a bien été générée: : `docker images | grep java-operator-samples-operator`:
+  - ajouter la dépendance suivante pour générer l'image avec JIB:
+```xml
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-container-image-jib</artifactId>
+    </dependency>
+```
+  - lancer le packaging : `mvn clean package`
+  - vérifier que l'image a bien été générée: : `docker images | grep java-operator-samples-operator`:
 ```bash
 wilda/java-operator-samples-operator                 0.0.1-SNAPSHOT         cffe16ca153c   54 seconds ago   417MB
 ```
-- push de l'image : `docker login` && `docker push wilda/java-operator-samples-operator:0.0.1-SNAPSHOT`
-- si nécessaire, créer le namespace `test-java-operator-samples`: `kubectl create ns test-java-operator-samples`
-- si nécessaire, créer le namespace `java-operator-samples-operator`: `kubectl create ns java-operator-samples-operator`
-- si nécessaire créer la CRD: `kubectl apply -f ./target/kubernetes/releasedetectors.wilda.fr-v1.yml`
-- appliquer le manifest créé : `kubectl apply -f ./target/kubernetes/kubernetes.yml`
-- vérifier que tout va bien:
+  - push de l'image : `docker login` && `docker push wilda/java-operator-samples-operator:0.0.1-SNAPSHOT`
+  - si nécessaire, créer le namespace `test-java-operator-samples`: `kubectl create ns test-java-operator-samples`
+  - si nécessaire, créer le namespace `java-operator-samples-operator`: `kubectl create ns java-operator-samples-operator`
+  - si nécessaire créer la CRD: `kubectl apply -f ./target/kubernetes/releasedetectors.wilda.fr-v1.yml`
+  - appliquer le manifest créé : `kubectl apply -f ./target/kubernetes/kubernetes.yml`
+  - vérifier que tout va bien:
 ```bash
 $ kubectl get pod -n java-operator-samples-operator
 
@@ -717,20 +725,18 @@ __  ____  __  _____   ___  __ ____  ______
  --/ __ \/ / / / _ | / _ \/ //_/ / / / __/ 
  -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \   
 --\___\_\____/_/ |_/_/|_/_/|_|\____/___/   
-2022-11-25 16:43:37,795 INFO  [io.qua.ope.run.OperatorProducer] (main) Quarkus Java Operator SDK extension 4.0.3 (commit: d88d41d on branch: d88d41d78baf198fa4e69d1205f9d19ee04d8c60) built on Thu Oct 06 20:26:39 GMT 2022
-2022-11-25 16:43:38,182 INFO  [io.jav.ope.Operator] (main) Registered reconciler: 'releasedetectorreconciler' for resource: 'class fr.wilda.ReleaseDetector' for namespace(s): [all namespaces]
-2022-11-25 16:43:38,183 INFO  [io.qua.ope.run.AppEventListener] (main) Starting operator.
-2022-11-25 16:43:38,184 INFO  [io.jav.ope.Operator] (main) Operator SDK 3.2.3 (commit: 9bb3f07) built on Fri Sep 30 14:18:27 GMT 2022 starting...
-2022-11-25 16:43:38,184 INFO  [io.jav.ope.Operator] (main) Client version: 5.12.4
-2022-11-25 16:43:38,186 INFO  [io.jav.ope.pro.Controller] (main) Starting 'releasedetectorreconciler' controller for reconciler: fr.wilda.ReleaseDetectorReconciler_ClientProxy, resource: fr.wilda.ReleaseDetector
-2022-11-25 16:43:38,935 INFO  [fr.wil.ReleaseDetectorReconciler] (main) ⚡️ Polling data !
-2022-11-25 16:43:38,937 INFO  [fr.wil.ReleaseDetectorReconciler] (main) 🚫 No resource created, nothing to do.
-2022-11-25 16:43:38,941 INFO  [io.jav.ope.pro.Controller] (main) 'releasedetectorreconciler' controller started, pending event sources initialization
-2022-11-25 16:43:39,100 INFO  [io.quarkus] (main) java-operator-samples 0.0.1-SNAPSHOT on JVM (powered by Quarkus 2.13.1.Final) started in 4.279s. Listening on: http://0.0.0.0:8080
-2022-11-25 16:43:39,101 INFO  [io.quarkus] (main) Profile prod activated. 
-2022-11-25 16:43:39,101 INFO  [io.quarkus] (main) Installed features: [cdi, kubernetes, kubernetes-client, micrometer, openshift-client, operator-sdk, rest-client, rest-client-jackson, smallrye-context-propagation, smallrye-health, vertx]
-2022-11-25 16:44:08,939 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-1) ⚡️ Polling data !
-2022-11-25 16:44:08,941 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-1) 🚫 No resource created, nothing to do.
+2023-03-14 16:39:50,723 INFO  [io.qua.ope.run.OperatorProducer] (main) Quarkus Java Operator SDK extension 5.1.1 (commit: 14a149c on branch: 14a149cea9fd57f14c9a6251411dca00d3807011) built on Thu Mar 02 20:32:32 GMT 2023
+2023-03-14 16:39:51,052 INFO  [io.jav.ope.Operator] (main) Registered reconciler: 'releasedetectorreconciler' for resource: 'class fr.wilda.ReleaseDetector' for namespace(s): [all namespaces]
+2023-03-14 16:39:51,053 INFO  [io.qua.ope.run.AppEventListener] (main) Starting operator.
+2023-03-14 16:39:51,054 INFO  [io.jav.ope.Operator] (main) Operator SDK 4.2.8 (commit: 3812a7f) built on Tue Feb 28 15:30:58 GMT 2023 starting...
+2023-03-14 16:39:51,054 INFO  [io.jav.ope.Operator] (main) Client version: 6.3.1
+2023-03-14 16:39:51,059 INFO  [io.jav.ope.pro.Controller] (Controller Starter for: releasedetectorreconciler) Starting 'releasedetectorreconciler' controller for reconciler: fr.wilda.ReleaseDetectorReconciler, resource: fr.wilda.ReleaseDetector
+2023-03-14 16:39:51,893 INFO  [fr.wil.ReleaseDetectorReconciler] (DEFAULT start -> io.javaoperatorsdk.operator.processing.event.source.polling.PollingEventSource@1937eaff) ⚡️ Polling data !
+2023-03-14 16:39:51,894 INFO  [fr.wil.ReleaseDetectorReconciler] (DEFAULT start -> io.javaoperatorsdk.operator.processing.event.source.polling.PollingEventSource@1937eaff) 🚫 No resource created, nothing to do.
+2023-03-14 16:39:51,904 INFO  [io.jav.ope.pro.Controller] (Controller Starter for: releasedetectorreconciler) 'releasedetectorreconciler' controller started
+2023-03-14 16:39:52,081 INFO  [io.quarkus] (main) java-operator-samples 0.0.1-SNAPSHOT on JVM (powered by Quarkus 2.16.4.Final) started in 4.429s. Listening on: http://0.0.0.0:8080
+2023-03-14 16:39:52,082 INFO  [io.quarkus] (main) Profile prod activated. 
+2023-03-14 16:39:52,082 INFO  [io.quarkus] (main) Installed features: [cdi, kubernetes, kubernetes-client, micrometer, openshift-client, operator-sdk, rest-client, rest-client-jackson, smallrye-context-propagation, smallrye-health, vertx]
 ```
   - tester l'opérateur en créant une CR: `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-java-operator-samples`
   - constater que l'opérateur n'arrive pas à créer l'application dans le namespace:
@@ -740,7 +746,7 @@ Caused by: io.fabric8.kubernetes.client.KubernetesClientException: Failure execu
 │ ments.apps is forbidden: User "system:serviceaccount:java-operator-samples-operator:java-operator-samples-operator" cannot create resource "depl │
 │ oyments" in API group "apps" in the namespace "test-java-operator-samples".       
 ```
-- supprimer la CR: `kubectl delete releasedetectors.wilda.fr check-quarkus -n test-java-operator-samples`
+  - supprimer la CR: `kubectl delete releasedetectors.wilda.fr check-quarkus -n test-java-operator-samples`
 
 ## 🔐 Configure security
   - la branche `07-add-security` contient le résultat de cette étape
