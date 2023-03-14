@@ -112,10 +112,12 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
       if (resource.getStatus() != null) {
         resource.getStatus().setDeployedRelase(currentRelease);
       } else {
-        resource.setStatus(new ReleaseDetectorStatus());
+        ReleaseDetectorStatus releaseDetectorStatus = new ReleaseDetectorStatus();
+        releaseDetectorStatus.setDeployedRelase(currentRelease);
+        resource.setStatus(releaseDetectorStatus);
       }
     }
-
+    
     return UpdateControl.patchStatus(resource);
   }
 
@@ -130,37 +132,18 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
 
   /**
    * Generate the Kubernetes deployment resource.
+   * 
    * @param currentRelease The release to deploy
    * @param releaseDetector The created custom resource
    * @return The created deployment
    */
   private Deployment makeDeployment(String currentRelease, ReleaseDetector releaseDetector) {
-    Deployment deployment = new DeploymentBuilder()
-    .withNewMetadata()
-      .withName("quarkus-deployment")
-      .addToLabels("app", "quarkus")
-      .endMetadata()
-    .withNewSpec()
-      .withReplicas(1)
-      .withNewSelector()
-        .withMatchLabels(Map.of("app", "quarkus"))
-      .endSelector()
-      .withNewTemplate()
-        .withNewMetadata()
-          .addToLabels("app","quarkus")
-        .endMetadata()
-        .withNewSpec()
-          .addNewContainer()
-            .withName("quarkus")
-            .withImage("wilda/" + repoName + ":" + currentRelease)
-            .addNewPort()
-              .withContainerPort(80)
-            .endPort()
-          .endContainer()
-        .endSpec()
-      .endTemplate()
-    .endSpec()
-    .build();
+    Deployment deployment = new DeploymentBuilder().withNewMetadata().withName("quarkus-deployment")
+        .addToLabels("app", "quarkus").endMetadata().withNewSpec().withReplicas(1).withNewSelector()
+        .withMatchLabels(Map.of("app", "quarkus")).endSelector().withNewTemplate().withNewMetadata()
+        .addToLabels("app", "quarkus").endMetadata().withNewSpec().addNewContainer()
+        .withName("quarkus").withImage("wilda/" + repoName + ":" + currentRelease).addNewPort()
+        .withContainerPort(80).endPort().endContainer().endSpec().endTemplate().endSpec().build();
 
     deployment.addOwnerReference(releaseDetector);
 
@@ -181,22 +164,11 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
    * @return The service.
    */
   private Service makeService(ReleaseDetector releaseDetector) {
-    Service service = new ServiceBuilder()
-    .withNewMetadata()
-      .withName("quarkus-service")
-      .addToLabels("app", "quarkus")
-    .endMetadata()
-    .withNewSpec()
-      .withType("NodePort")
-      .withSelector(Map.of("app", "quarkus"))
-      .addNewPort()
-        .withPort(80)
-        .withTargetPort(new IntOrString(8080))
-        .withNodePort(30080)
-      .endPort()
-    .endSpec()
-    .build();
-    
+    Service service = new ServiceBuilder().withNewMetadata().withName("quarkus-service")
+        .addToLabels("app", "quarkus").endMetadata().withNewSpec().withType("NodePort")
+        .withSelector(Map.of("app", "quarkus")).addNewPort().withPort(80)
+        .withTargetPort(new IntOrString(8080)).withNodePort(30080).endPort().endSpec().build();
+
     service.addOwnerReference(releaseDetector);
 
     try {
@@ -207,5 +179,5 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
     }
 
     return service;
-  }  
+  }
 }
