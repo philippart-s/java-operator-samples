@@ -364,16 +364,6 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
   }
 }
 ```
-  - créer la CR de tests `cr-test-gh-release-watch.yml`:
-```yaml
-apiVersion: "fr.wilda/v1"
-kind: ReleaseDetector
-metadata:
-  name: check-quarkus
-spec:
-  organisation: philippart-s
-  repository: hello-world-from-quarkus
-```
   - une fois Quarkus rechargé la sortie des logs devrait être de la forme:
 ```bash
 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-4) ⚡️ Polling data !
