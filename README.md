@@ -693,7 +693,7 @@ quarkus.rest-client."fr.wilda.util.GHService".scope=javax.inject.Singleton
 quarkus.kubernetes.namespace=java-operator-samples-operator
 quarkus.kubernetes.namespace=java-operator-samples-operator
 ```
-- lancer le packaging : `mvn clean package`
+- lancer le packaging : `mvn clean package` ou `sudo env "PATH=$PATH" mvn clean package` si votre client docker nécessitedes droits admin
 - vérifier que l'image a bien été générée: : `docker images | grep java-operator-samples-operator`:
 ```bash
 wilda/java-operator-samples-operator                 0.0.1-SNAPSHOT         cffe16ca153c   54 seconds ago   417MB
