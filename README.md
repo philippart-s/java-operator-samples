@@ -518,6 +518,7 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
 
   /**
    * Generate the Kubernetes deployment resource.
+   * 
    * @param currentRelease The release to deploy
    * @param releaseDetector The created custom resource
    * @return The created deployment
@@ -527,7 +528,7 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
     .withNewMetadata()
       .withName("quarkus-deployment")
       .addToLabels("app", "quarkus")
-      .endMetadata()
+    .endMetadata()
     .withNewSpec()
       .withReplicas(1)
       .withNewSelector()
@@ -535,7 +536,7 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
       .endSelector()
       .withNewTemplate()
         .withNewMetadata()
-          .addToLabels("app","quarkus")
+          .addToLabels("app", "quarkus")
         .endMetadata()
         .withNewSpec()
           .addNewContainer()
@@ -552,12 +553,7 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
 
     deployment.addOwnerReference(releaseDetector);
 
-    try {
-      log.info("Generated deployment {}", SerializationUtils.dumpAsYaml(deployment));
-    } catch (JsonProcessingException e) {
-      log.error("Unable to get YML");
-      e.printStackTrace();
-    }
+    log.info("Generated deployment {}", Serialization.asYaml(deployment));
 
     return deployment;
   }
@@ -584,18 +580,13 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
       .endPort()
     .endSpec()
     .build();
-    
+
     service.addOwnerReference(releaseDetector);
 
-    try {
-      log.info("Generated service {}", SerializationUtils.dumpAsYaml(service));
-    } catch (JsonProcessingException e) {
-      log.error("Unable to get YML");
-      e.printStackTrace();
-    }
+    log.info("Generated service {}", Serialization.asYaml(service));
 
     return service;
-  }  
+  } 
 }
 ```
   - recréer la CR : `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-java-operator-samples`

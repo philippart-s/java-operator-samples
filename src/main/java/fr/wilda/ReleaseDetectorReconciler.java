@@ -6,7 +6,6 @@ import javax.inject.Inject;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import fr.wilda.util.GHService;
 import fr.wilda.util.GitHubRelease;
 import io.fabric8.kubernetes.api.model.IntOrString;
@@ -15,7 +14,7 @@ import io.fabric8.kubernetes.api.model.ServiceBuilder;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.internal.SerializationUtils;
+import io.fabric8.kubernetes.client.utils.Serialization;
 import io.javaoperatorsdk.operator.api.reconciler.Cleaner;
 import io.javaoperatorsdk.operator.api.reconciler.Context;
 import io.javaoperatorsdk.operator.api.reconciler.DeleteControl;
@@ -117,7 +116,7 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
         resource.setStatus(releaseDetectorStatus);
       }
     }
-    
+
     return UpdateControl.patchStatus(resource);
   }
 
@@ -138,21 +137,36 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
    * @return The created deployment
    */
   private Deployment makeDeployment(String currentRelease, ReleaseDetector releaseDetector) {
-    Deployment deployment = new DeploymentBuilder().withNewMetadata().withName("quarkus-deployment")
-        .addToLabels("app", "quarkus").endMetadata().withNewSpec().withReplicas(1).withNewSelector()
-        .withMatchLabels(Map.of("app", "quarkus")).endSelector().withNewTemplate().withNewMetadata()
-        .addToLabels("app", "quarkus").endMetadata().withNewSpec().addNewContainer()
-        .withName("quarkus").withImage("wilda/" + repoName + ":" + currentRelease).addNewPort()
-        .withContainerPort(80).endPort().endContainer().endSpec().endTemplate().endSpec().build();
+    Deployment deployment = new DeploymentBuilder()
+    .withNewMetadata()
+      .withName("quarkus-deployment")
+      .addToLabels("app", "quarkus")
+    .endMetadata()
+    .withNewSpec()
+      .withReplicas(1)
+      .withNewSelector()
+        .withMatchLabels(Map.of("app", "quarkus"))
+      .endSelector()
+      .withNewTemplate()
+        .withNewMetadata()
+          .addToLabels("app", "quarkus")
+        .endMetadata()
+        .withNewSpec()
+          .addNewContainer()
+            .withName("quarkus")
+            .withImage("wilda/" + repoName + ":" + currentRelease)
+            .addNewPort()
+              .withContainerPort(80)
+            .endPort()
+          .endContainer()
+        .endSpec()
+      .endTemplate()
+    .endSpec()
+    .build();
 
     deployment.addOwnerReference(releaseDetector);
 
-    try {
-      log.info("Generated deployment {}", SerializationUtils.dumpAsYaml(deployment));
-    } catch (JsonProcessingException e) {
-      log.error("Unable to get YML");
-      e.printStackTrace();
-    }
+    log.info("Generated deployment {}", Serialization.asYaml(deployment));
 
     return deployment;
   }
@@ -164,19 +178,25 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
    * @return The service.
    */
   private Service makeService(ReleaseDetector releaseDetector) {
-    Service service = new ServiceBuilder().withNewMetadata().withName("quarkus-service")
-        .addToLabels("app", "quarkus").endMetadata().withNewSpec().withType("NodePort")
-        .withSelector(Map.of("app", "quarkus")).addNewPort().withPort(80)
-        .withTargetPort(new IntOrString(8080)).withNodePort(30080).endPort().endSpec().build();
+    Service service = new ServiceBuilder()
+    .withNewMetadata()
+      .withName("quarkus-service")
+      .addToLabels("app", "quarkus")
+    .endMetadata()
+    .withNewSpec()
+      .withType("NodePort")
+      .withSelector(Map.of("app", "quarkus"))
+      .addNewPort()
+        .withPort(80)
+        .withTargetPort(new IntOrString(8080))
+        .withNodePort(30080)
+      .endPort()
+    .endSpec()
+    .build();
 
     service.addOwnerReference(releaseDetector);
 
-    try {
-      log.info("Generated service {}", SerializationUtils.dumpAsYaml(service));
-    } catch (JsonProcessingException e) {
-      log.error("Unable to get YML");
-      e.printStackTrace();
-    }
+    log.info("Generated service {}", Serialization.asYaml(service));
 
     return service;
   }
