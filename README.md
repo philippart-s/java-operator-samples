@@ -345,11 +345,13 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
         organisationName);
 
     // Update the status
-    if (resource.getStatus() != null) {
-      resource.getStatus().setDeployedRelase(currentRelease);
-    } else {
-      resource.setStatus(new ReleaseDetectorStatus());
-    }
+      if (resource.getStatus() != null) {
+        resource.getStatus().setDeployedRelase(currentRelease);
+      } else {
+        ReleaseDetectorStatus releaseDetectorStatus = new ReleaseDetectorStatus();
+        releaseDetectorStatus.setDeployedRelase(currentRelease);
+        resource.setStatus(releaseDetectorStatus);
+      }
 
     return UpdateControl.patchStatus(resource);
   }

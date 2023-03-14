@@ -89,7 +89,9 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
     if (resource.getStatus() != null) {
       resource.getStatus().setDeployedRelase(currentRelease);
     } else {
-      resource.setStatus(new ReleaseDetectorStatus());
+      ReleaseDetectorStatus releaseDetectorStatus = new ReleaseDetectorStatus();
+      releaseDetectorStatus.setDeployedRelase(currentRelease);
+      resource.setStatus(releaseDetectorStatus);
     }
 
     return UpdateControl.patchStatus(resource);
