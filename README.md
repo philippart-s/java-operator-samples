@@ -3,7 +3,7 @@ Source code with exemples of Kubernetes operators developed with the Java langua
 
 ## 🎉 Init project
  - la branche `01-init-project` contient le résultat de cette étape
- - [installer / mettre](https://sdk.operatorframework.io/docs/installation/) à jour la dernière version du [Operator SDK](https://sdk.operatorframework.io/) (v1.25.2 au moment de l'écriture du readme)
+ - [installer / mettre](https://sdk.operatorframework.io/docs/installation/) à jour la dernière version du [Operator SDK](https://sdk.operatorframework.io/) (v1.27 au moment de l'écriture du readme)
  - créer le répertoire `java-operator-samples`
  - dans le répertoire `java-operator-samples `, scaffolding du projet avec Quarkus : `operator-sdk init --plugins quarkus --domain wilda.fr --project-name java-operator-samples`
  - l'arborescence générée est la suivante:
