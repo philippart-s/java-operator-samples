@@ -113,8 +113,8 @@ NAME                        CREATED AT
 releasedetectors.wilda.fr   2022-08-26T15:40:19Z
 ```
 
-## 📝  CRD auto apply
- - la branche `03-auto-apply-crd` contient le résultat de cette étape
+## 👋 Hello,World!
+ - la branche `03-hello-world` contient le résultat de cette étape
  - ajouter un champ `name` dans `ReleaseDetectorSpec.java`:
 ```java
 public class ReleaseDetectorSpec {
