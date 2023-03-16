@@ -97,14 +97,14 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
       // Deploy appllication
       log.info("🔀 Deploy the new release {} !", currentRelease);
       Deployment deployment = makeDeployment(currentRelease, resource);
-      client.apps().deployments().inNamespace(namespace).createOrReplace(deployment);
+      client.apps().deployments().inNamespace(namespace).resource(deployment).createOrReplace();
 
       // Create service
       Service service = makeService(resource);
       Service existingService = client.services().inNamespace(resource.getMetadata().getNamespace())
           .withName(service.getMetadata().getName()).get();
       if (existingService == null) {
-        client.services().inNamespace(namespace).createOrReplace(service);
+        client.services().inNamespace(namespace).resource(service).createOrReplace();
       }
 
       // Update the status
