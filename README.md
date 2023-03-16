@@ -406,4 +406,5 @@ INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-6) 🚀 Fetch resources !
 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-6) 🐙 Get the last release version of repository philippart-s in organisation hello-world-from-quarkus.
 INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-6) 🏷  Last release is 1.0.4
 ```
+  - vérifier la mise à jour du status de la CR : `kubectl get ReleaseDetector/check-quarkus -n test-java-operator-samples -o yaml`
   - supprimer la CR créée : `kubectl delete releasedetectors.wilda.fr check-quarkus -n test-java-operator-samples`
