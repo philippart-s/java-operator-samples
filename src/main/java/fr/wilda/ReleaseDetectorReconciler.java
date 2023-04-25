@@ -1,13 +1,9 @@
 package fr.wilda;
 
 import java.util.Map;
-import java.util.Set;
-import javax.inject.Inject;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
+import javax.ws.rs.Produces;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import fr.wilda.util.GHService;
-import fr.wilda.util.GitHubRelease;
 import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceBuilder;
@@ -24,7 +20,7 @@ import io.javaoperatorsdk.operator.api.reconciler.Reconciler;
 import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.javaoperatorsdk.operator.processing.event.ResourceID;
 import io.javaoperatorsdk.operator.processing.event.source.EventSource;
-import io.javaoperatorsdk.operator.processing.event.source.polling.PollingEventSource;
+import io.javaoperatorsdk.operator.processing.event.source.inbound.SimpleInboundEventSource;
 
 public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
     Cleaner<ReleaseDetector>, EventSourceInitializer<ReleaseDetector> {
@@ -51,9 +47,7 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
    */
   private final KubernetesClient client;
 
-  @Inject
-  @RestClient
-  private GHService ghService;
+  private SimpleInboundEventSource simpleInboundEventSource;
 
   public ReleaseDetectorReconciler(KubernetesClient client) {
     this.client = client;
@@ -61,23 +55,8 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
 
   @Override
   public Map<String, EventSource> prepareEventSources(EventSourceContext<ReleaseDetector> context) {
-    var poolingEventSource = new PollingEventSource<String, ReleaseDetector>(() -> {
-      log.info("⚡️ Polling data !");
-      if (resourceID != null) {
-        log.info("🚀 Fetch resources !");
-        log.info("🐙 Get the last release version of repository {} in organisation {}.",
-            organisationName, repoName);
-        GitHubRelease gitHubRelease = ghService.getByOrgaAndRepo(organisationName, repoName);
-        log.info("🏷  Last release is {}", gitHubRelease.getTagName());
-        currentRelease = gitHubRelease.getTagName();
-        return Map.of(resourceID, Set.of(currentRelease));
-      } else {
-        log.info("🚫 No resource created, nothing to do.");
-        return Map.of();
-      }
-    }, 30000, String.class);
-
-    return EventSourceInitializer.nameEventSources(poolingEventSource);
+    simpleInboundEventSource = createSimpleInboundEventSource();
+    return EventSourceInitializer.nameEventSources(simpleInboundEventSource);
   }
 
   @Override
@@ -199,5 +178,23 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
     log.info("Generated service {}", Serialization.asYaml(service));
 
     return service;
+  }
+
+    /**
+   * Fire an event to awake the reconciler.
+   * @param tag The new tag on GitHub.
+   */
+  public void fireEvent(String tag) {
+    if (resourceID != null) {
+      currentRelease = tag;
+      simpleInboundEventSource.propagateEvent(resourceID);
+    } else {
+      log.info("🚫 No resource created, nothing to do.");
+    }
+  }
+
+  @Produces
+  public SimpleInboundEventSource createSimpleInboundEventSource() {
+    return new SimpleInboundEventSource();
   }
 }
