@@ -45,15 +45,6 @@
       <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
       <version>${quarkus.version}</version>
     </dependency>
-    <!-- To call GH API-->
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-rest-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-rest-client-jackson</artifactId>
-    </dependency>
     <!-- To expose Webhook -->
     <dependency>
       <groupId>io.quarkus</groupId>
