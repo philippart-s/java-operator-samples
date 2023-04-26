@@ -73,7 +73,7 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
         organisationName);
 
     if (currentRelease != null && currentRelease.trim().length() != 0) {
-      // Deploy appllication
+      // Deploy application
       log.info("🔀 Deploy the new release {} !", currentRelease);
       Deployment deployment = makeDeployment(currentRelease, resource);
       client.apps().deployments().inNamespace(namespace).resource(deployment).createOrReplace();
