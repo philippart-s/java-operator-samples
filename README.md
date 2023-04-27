@@ -1097,8 +1097,9 @@ Caused by: io.fabric8.kubernetes.client.KubernetesClientException: Failure execu
 
 ## 🔐 Configure security
   - la branche `07-add-security` contient le résultat de cette étape
-  - ajouter un fichier `src/main/kubernetes/kubernetes.yml` contenant la définition des _ClusterRole_ / _ClusterRoleBinding_ spécifiques à l'opérateur:
+  - modifier le fichier `src/main/kubernetes/kubernetes.yml` pour ajouter la définition des _ClusterRole_ / _ClusterRoleBinding_ spécifiques à l'opérateur:
 ```yaml
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -1145,7 +1146,8 @@ $ kubectl get pod -n java-operator-samples-operator
 NAME                                             READY   STATUS    RESTARTS   AGE
 java-operator-samples-operator-756d7c45d9-zlwls   1/1     Running   0          42s   
 ```
-  - tester l'opérateur en créant une CR: `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-java-operator-samples`
+  - créer la CR de test : `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-java-operator-samples`
+  - tester le déclenchement via Webhook : `curl --json '{"ref": "1.0.4", "ref_type": "tag"}' http://<ingress ip>/webhook/event`
   - valider que l'application a bien été déployée : `kubectl get pods,svc -n test-java-operator-samples`:
 ```bash
 $ kubectl get pods,svc -n test-java-operator-samples
@@ -1154,11 +1156,11 @@ NAME                                      READY   STATUS    RESTARTS   AGE
 pod/quarkus-deployment-7b74f6b6ff-dcdkl   1/1     Running   0          66s
 
 NAME                      TYPE       CLUSTER-IP    EXTERNAL-IP   PORT(S)        AGE
-service/quarkus-service   NodePort   10.3.14.182   <none>        80:30080/TCP   66s
+service/quarkus-service   NodePort   XX.XXX.X.XXX   <none>        80:30080/TCP   66s
 ```
   - tester l'application:
 ```bash
-$ curl http://http://xxxx.nodes.c1.xxx.k8s.ovh.net:30080/hello
+$ curl http://xxxx.nodes.c1.xxx.k8s.ovh.net:30080/hello
 
 👋 Hello, World ! 🌍
 ```
