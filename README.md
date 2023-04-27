@@ -1096,7 +1096,7 @@ Caused by: io.fabric8.kubernetes.client.KubernetesClientException: Failure execu
   - supprimer la CR: `kubectl delete releasedetectors.wilda.fr check-quarkus -n test-java-operator-samples`
 
 ## 🔐 Configure security
-  - la branche `07-add-security` contient le résultat de cette étape
+  - la branche `08-add-security` contient le résultat de cette étape
   - modifier le fichier `src/main/kubernetes/kubernetes.yml` pour ajouter la définition des _ClusterRole_ / _ClusterRoleBinding_ spécifiques à l'opérateur:
 ```yaml
 ---
