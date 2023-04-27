@@ -33,3 +33,21 @@ subjects:
     name: java-operator-samples-operator
     namespace: java-operator-samples-operator
 ---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  name: ingress
+  namespace: java-operator-samples-operator
+spec:
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: java-operator-samples-operator
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
