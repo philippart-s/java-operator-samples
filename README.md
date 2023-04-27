@@ -1025,6 +1025,28 @@ quarkus.kubernetes.namespace=java-operator-samples-operator
       <artifactId>quarkus-container-image-jib</artifactId>
     </dependency>
 ```
+  - ajouter un fichier `src/main/kubernetes/kubernetes.yml` pour créer l'ingress :
+```yaml
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  name: ingress
+  namespace: java-operator-samples-operator
+spec:
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: java-operator-samples-operator
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
+```
   - lancer le packaging : `mvn clean package`
   - vérifier que l'image a bien été générée: : `docker images | grep java-operator-samples-operator`:
 ```bash
@@ -1062,7 +1084,8 @@ __  ____  __  _____   ___  __ ____  ______
 2023-03-14 16:39:52,082 INFO  [io.quarkus] (main) Profile prod activated. 
 2023-03-14 16:39:52,082 INFO  [io.quarkus] (main) Installed features: [cdi, kubernetes, kubernetes-client, micrometer, openshift-client, operator-sdk, rest-client, rest-client-jackson, smallrye-context-propagation, smallrye-health, vertx]
 ```
-  - tester l'opérateur en créant une CR: `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-java-operator-samples`
+  - créer la CR de test : `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-java-operator-samples`
+  - tester le déclenchement via Webhook : `curl --json '{"ref": "1.0.4", "ref_type": "tag"}' http://<ingress ip>/webhook/event`
   - constater que l'opérateur n'arrive pas à créer l'application dans le namespace:
 ```bash
 Caused by: io.fabric8.kubernetes.client.KubernetesClientException: Failure executing: POST at: https://10.3.0.1/apis/apps/v1/namespaces/test-jav │
