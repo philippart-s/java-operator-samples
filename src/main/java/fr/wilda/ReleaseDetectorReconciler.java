@@ -1,7 +1,6 @@
 package fr.wilda;
 
 import java.util.Map;
-import javax.ws.rs.Produces;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.fabric8.kubernetes.api.model.IntOrString;
@@ -21,6 +20,7 @@ import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.javaoperatorsdk.operator.processing.event.ResourceID;
 import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 import io.javaoperatorsdk.operator.processing.event.source.inbound.SimpleInboundEventSource;
+import jakarta.ws.rs.Produces;
 
 public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
     Cleaner<ReleaseDetector>, EventSourceInitializer<ReleaseDetector> {
