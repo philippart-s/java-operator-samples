@@ -2,7 +2,6 @@ package fr.wilda;
 
 import java.util.Map;
 import java.util.Set;
-import javax.inject.Inject;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +18,7 @@ import io.javaoperatorsdk.operator.api.reconciler.UpdateControl;
 import io.javaoperatorsdk.operator.processing.event.ResourceID;
 import io.javaoperatorsdk.operator.processing.event.source.EventSource;
 import io.javaoperatorsdk.operator.processing.event.source.polling.PollingEventSource;
+import jakarta.inject.Inject;
 
 public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
     Cleaner<ReleaseDetector>, EventSourceInitializer<ReleaseDetector> {
