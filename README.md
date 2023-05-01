@@ -3,7 +3,7 @@ Source code with exemples of Kubernetes operators developed with the Java langua
 
 ## 🎉 Init project
  - la branche `01-init-project` contient le résultat de cette étape
- - [installer / mettre](https://sdk.operatorframework.io/docs/installation/) à jour la dernière version du [Operator SDK](https://sdk.operatorframework.io/) (v1.27 au moment de l'écriture du readme)
+ - [installer / mettre](https://sdk.operatorframework.io/docs/installation/) à jour la dernière version du [Operator SDK](https://sdk.operatorframework.io/) (v1.28 au moment de l'écriture du readme)
  - créer le répertoire `java-operator-samples`
  - dans le répertoire `java-operator-samples `, scaffolding du projet avec Quarkus : `operator-sdk init --plugins quarkus --domain wilda.fr --project-name java-operator-samples`
  - l'arborescence générée est la suivante:
@@ -19,13 +19,13 @@ Source code with exemples of Kubernetes operators developed with the Java langua
 │       └── resources
 │           └── application.properties
 ```
- - ℹ pour utiliser la dernière version de JOSDK et de l'extension il faut mettre à jour à la main les dépendances (`5.1.1` / `2.16.4.Final` au moement de l'écriture de ce tuto): 
+ - ℹ pour utiliser la dernière version de JOSDK et de l'extension il faut mettre à jour à la main les dépendances (`5.1.1` / `2.16.4.Final` au moment de l'écriture de ce tuto): 
 ```xml
   <!-- ... -->
   <properties>
     <!-- ... -->
-    <quarkus-sdk.version>5.1.1</quarkus-sdk.version>
-    <quarkus.version>2.16.4.Final</quarkus.version>
+    <quarkus-sdk.version>6.0.1</quarkus-sdk.version>
+    <quarkus.version>3.0.0.Final</quarkus.version>
   </properties>
   <!-- ... -->
 ```
@@ -36,13 +36,12 @@ __  ____  __  _____   ___  __ ____  ______
  --/ __ \/ / / / _ | / _ \/ //_/ / / / __/ 
  -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \   
 --\___\_\____/_/ |_/_/|_/_/|_|\____/___/   
-2023-03-14 15:05:13,721 INFO  [io.qua.ope.run.ConfigurationServiceRecorder] (Quarkus Main Thread) Leader election deactivated for dev profile
-
-2023-03-14 15:05:14,611 INFO  [io.qua.ope.run.OperatorProducer] (Quarkus Main Thread) Quarkus Java Operator SDK extension 5.1.1 (commit: 14a149c on branch: 14a149cea9fd57f14c9a6251411dca00d3807011) built on Thu Mar 02 20:32:32 UTC 2023
-2023-03-14 15:05:14,620 WARN  [io.qua.ope.run.AppEventListener] (Quarkus Main Thread) No Reconciler implementation was found so the Operator was not started.
-2023-03-14 15:05:14,780 INFO  [io.quarkus] (Quarkus Main Thread) java-operator-samples 0.0.1-SNAPSHOT on JVM (powered by Quarkus 2.16.4.Final) started in 8.303s. Listening on: http://localhost:8080
-2023-03-14 15:05:14,782 INFO  [io.quarkus] (Quarkus Main Thread) Profile dev activated. Live Coding activated.
-2023-03-14 15:05:14,783 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, kubernetes, kubernetes-client, micrometer, openshift-client, operator-sdk, smallrye-context-propagation, smallrye-health, vertx]
+2023-05-01 18:31:59,025 INFO  [io.qua.ope.run.ConfigurationServiceRecorder] (Quarkus Main Thread) Leader election deactivated for dev profile
+2023-05-01 18:31:59,082 INFO  [io.qua.ope.run.OperatorProducer] (Quarkus Main Thread) Quarkus Java Operator SDK extension 6.0.1 (commit: b07f98e on branch: b07f98e7fd5877c8f0ac0c18d180229a7ef15104) built on Wed Apr 26 10:46:17 CEST 2023
+2023-05-01 18:31:59,084 WARN  [io.qua.ope.run.AppEventListener] (Quarkus Main Thread) No Reconciler implementation was found so the Operator was not started.
+2023-05-01 18:31:59,127 INFO  [io.quarkus] (Quarkus Main Thread) java-operator-samples 0.0.1-SNAPSHOT on JVM (powered by Quarkus 3.0.0.Final) started in 2.366s. Listening on: http://localhost:8080
+2023-05-01 18:31:59,128 INFO  [io.quarkus] (Quarkus Main Thread) Profile dev activated. Live Coding activated.
+2023-05-01 18:31:59,128 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, kubernetes, kubernetes-client, micrometer, openshift-client, operator-sdk, smallrye-context-propagation, smallrye-health, vertx]
 ```
 
 ## 📄 CRD generation
@@ -68,7 +67,7 @@ quarkus.container-image.name=java-operator-samples-operator
 # set to true to automatically apply CRDs to the cluster when they get regenerated
 quarkus.operator-sdk.crd.apply=true
 ```
-  - tester que tout compile que la CRD se génère bien: `mvn clean package` (ou restez en mode `mvn quarkus:dev` pour voir la magie opérer en direct :wink:)
+  - tester que tout compile que la CRD se génère bien: `mvn clean compile` (ou restez en mode `mvn quarkus:dev` pour voir la magie opérer en direct :wink:)
   - ⚠️ Il se peut que vous ayez une erreur de la forme : 
 ``` bash
 2023-03-14 08:31:41,865 ERROR [io.jav.ope.Operator] (Quarkus Main Thread) Error starting operator: io.fabric8.kubernetes.client.KubernetesClientException: Operation: [get]  for kind: [CustomResourceDefinition]  with name: [releasedetectors.wilda.fr]  in namespace: [null]  failed.
