@@ -19,7 +19,7 @@ Source code with exemples of Kubernetes operators developed with the Java langua
 │       └── resources
 │           └── application.properties
 ```
- - ℹ pour utiliser la dernière version de JOSDK et de l'extension il faut mettre à jour à la main les dépendances (`5.1.1` / `2.16.4.Final` au moment de l'écriture de ce tuto): 
+ - ℹ pour utiliser la dernière version de JOSDK et de l'extension il faut mettre à jour à la main les dépendances (`6.0.1` / `3.0.0.Final` au moment de l'écriture de ce tuto): 
 ```xml
   <!-- ... -->
   <properties>
