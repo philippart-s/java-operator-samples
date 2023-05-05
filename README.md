@@ -731,6 +731,7 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
     log.info("⚡️ Event occurs ! Reconcile called.");
 
     String namespace = resource.getMetadata().getNamespace();
+    String statusDeployedRelease = (resource.getStatus() != null ? resource.getStatus().getDeployedRelase() : "");
 
     // Get configuration
     resourceID = ResourceID.fromResource(resource);
@@ -739,18 +740,21 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
     log.info("⚙️ Configuration values : repository = {}, organisation = {}.", repoName,
         organisationName);
 
-    if (currentRelease != null && currentRelease.trim().length() != 0) {
-      // Deploy appllication
+    if (currentRelease != null && currentRelease.trim().length() != 0 && !currentRelease.equalsIgnoreCase(statusDeployedRelease)) {      
+      // Deploy application
       log.info("🔀 Deploy the new release {} !", currentRelease);
       Deployment deployment = makeDeployment(currentRelease, resource);
-      client.apps().deployments().inNamespace(namespace).resource(deployment).createOrReplace();
+      Deployment existingDeployment = client.apps().deployments().inNamespace(namespace).withName(deployment.getMetadata().getName()).get();
+      if (existingDeployment == null) {
+        client.apps().deployments().inNamespace(namespace).resource(deployment).create();
+      }
 
       // Create service
       Service service = makeService(resource);
       Service existingService = client.services().inNamespace(resource.getMetadata().getNamespace())
           .withName(service.getMetadata().getName()).get();
       if (existingService == null) {
-        client.services().inNamespace(namespace).resource(service).createOrReplace();
+        client.services().inNamespace(namespace).resource(service).create();
       }
 
       // Update the status
