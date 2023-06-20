@@ -513,7 +513,7 @@ No resources found in test-java-operator-samples namespace.
 ```
 
 ## 🐳  Packaging & deployment to K8s
-  - la branche `07-deploy-operator` contient le résultat de cette étape
+  - la branche `05-deploy-operator` contient le résultat de cette étape
   - arrêter le mode dev de Quarkus
   - modifier le fichier `application.properties`:
 ```properties
@@ -609,7 +609,7 @@ Caused by: io.fabric8.kubernetes.client.KubernetesClientException: Failure execu
   - supprimer la CR: `kubectl delete releasedetectors.wilda.fr check-quarkus -n test-java-operator-samples`
 
 ## 🔐 Configure security
-  - la branche `08-add-security` contient le résultat de cette étape
+  - la branche `06-add-security` contient le résultat de cette étape
   - modifier le fichier `src/main/kubernetes/kubernetes.yml` pour ajouter la définition des _ClusterRole_ / _ClusterRoleBinding_ spécifiques à l'opérateur:
 ```yaml
 ---
