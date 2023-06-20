@@ -513,7 +513,7 @@ No resources found in test-java-operator-samples namespace.
 ```
 
 ## 🐳  Packaging & deployment to K8s
-  - la branche `07-deploy-operator` contient le résultat de cette étape
+  - la branche `05-deploy-operator` contient le résultat de cette étape
   - arrêter le mode dev de Quarkus
   - modifier le fichier `application.properties`:
 ```properties
