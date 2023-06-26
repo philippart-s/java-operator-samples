@@ -26,14 +26,11 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
     Cleaner<ReleaseDetector>, EventSourceInitializer<ReleaseDetector> {
   private static final Logger log = LoggerFactory.getLogger(ReleaseDetectorReconciler.class);
 
+
   /**
-   * Name of the repository to check.
+   * Flag to know if the operator must deploy the application on a new event. 
    */
-  private String repoName;
-  /**
-   * GitHub organisation name that contains the repository.
-   */
-  private String organisationName;
+  private String deploy = "❌";
   /**
    * ID of the created custom resource.
    */
@@ -62,18 +59,17 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
   @Override
   public UpdateControl<ReleaseDetector> reconcile(ReleaseDetector resource, Context context) {
     log.info("⚡️ Event occurs ! Reconcile called.");
-
+    
     String namespace = resource.getMetadata().getNamespace();
     String statusDeployedRelease = (resource.getStatus() != null ? resource.getStatus().getDeployedRelase() : "");
 
+    deploy = resource.getSpec().getDeploy();
+    log.info("The Quarkus application will be deployed if needed: {}", deploy);
+
     // Get configuration
     resourceID = ResourceID.fromResource(resource);
-    repoName = resource.getSpec().getRepository();
-    organisationName = resource.getSpec().getOrganisation();
-    log.info("⚙️ Configuration values : repository = {}, organisation = {}.", repoName,
-        organisationName);
 
-    if (currentRelease != null && currentRelease.trim().length() != 0 && !currentRelease.equalsIgnoreCase(statusDeployedRelease)) {      
+    if ("✅".equalsIgnoreCase(deploy) && currentRelease != null && currentRelease.trim().length() != 0 && !currentRelease.equalsIgnoreCase(statusDeployedRelease)) {      
       // Deploy application
       log.info("🔀 Deploy the new release {} !", currentRelease);
       Deployment deployment = makeDeployment(currentRelease, resource);
@@ -137,7 +133,7 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
         .withNewSpec()
           .addNewContainer()
             .withName("quarkus")
-            .withImage("wilda/" + repoName + ":" + currentRelease)
+            .withImage("wilda/hello-world-from-quarkus" + ":" + currentRelease)
             .addNewPort()
               .withContainerPort(80)
             .endPort()
