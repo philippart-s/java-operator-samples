@@ -194,20 +194,17 @@ spec:
       <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
     </dependency>      
 ```
-  - modifier le reconciler pour utiliser `SimpleInboundEventSource` :
+  - modifier le reconciler pour utiliser `SimpleInboundEventSource` et déployer l'application si nécessaire :
 ```java
 public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
     Cleaner<ReleaseDetector>, EventSourceInitializer<ReleaseDetector> {
   private static final Logger log = LoggerFactory.getLogger(ReleaseDetectorReconciler.class);
 
+
   /**
-   * Name of the repository to check.
+   * Flag to know if the operator must deploy the application on a new event. 
    */
-  private String repoName;
-  /**
-   * GitHub organisation name that contains the repository.
-   */
-  private String organisationName;
+  private String deploy = "❌";
   /**
    * ID of the created custom resource.
    */
@@ -236,18 +233,17 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
   @Override
   public UpdateControl<ReleaseDetector> reconcile(ReleaseDetector resource, Context context) {
     log.info("⚡️ Event occurs ! Reconcile called.");
-
+    
     String namespace = resource.getMetadata().getNamespace();
     String statusDeployedRelease = (resource.getStatus() != null ? resource.getStatus().getDeployedRelase() : "");
 
+    deploy = resource.getSpec().getDeploy();
+    log.info("The Quarkus application will be deployed if needed: {}", deploy);
+
     // Get configuration
     resourceID = ResourceID.fromResource(resource);
-    repoName = resource.getSpec().getRepository();
-    organisationName = resource.getSpec().getOrganisation();
-    log.info("⚙️ Configuration values : repository = {}, organisation = {}.", repoName,
-        organisationName);
 
-    if (currentRelease != null && currentRelease.trim().length() != 0 && !currentRelease.equalsIgnoreCase(statusDeployedRelease)) {      
+    if ("✅".equalsIgnoreCase(deploy) && currentRelease != null && currentRelease.trim().length() != 0 && !currentRelease.equalsIgnoreCase(statusDeployedRelease)) {      
       // Deploy application
       log.info("🔀 Deploy the new release {} !", currentRelease);
       Deployment deployment = makeDeployment(currentRelease, resource);
@@ -311,7 +307,7 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
         .withNewSpec()
           .addNewContainer()
             .withName("quarkus")
-            .withImage("wilda/" + repoName + ":" + currentRelease)
+            .withImage("wilda/hello-world-from-quarkus" + ":" + currentRelease)
             .addNewPort()
               .withContainerPort(80)
             .endPort()
@@ -426,10 +422,19 @@ public class WebHookOperator {
 }
 ```
   - créer le namespace `test-java-operator-samples` : `kubectl create ns test-java-operator-samples`
+  - créer la CR de tests `src/main/test/resources/cr-test-gh-release-watch.yml`:
+```yaml
+apiVersion: "wilda.fr/v1"
+kind: ReleaseDetector
+metadata:
+  name: check-quarkus
+spec:
+  deploy: ✅
+```
   - appliquer la CR de test : `kubectl apply  -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-java-operator-samples`
 ```bash
 INFO  [fr.wil.ReleaseDetectorReconciler] (ReconcilerExecutor-releasedetectorreconciler-136) ⚡️ Event occurs ! Reconcile called.
-INFO  [fr.wil.ReleaseDetectorReconciler] (ReconcilerExecutor-releasedetectorreconciler-136) ⚙️ Configuration values : repository = hello-world-from-quarkus, organisation = philippart-s.
+INFO  [fr.wil.ReleaseDetectorReconciler] (ReconcilerExecutor-releasedetectorreconciler-136) The Quarkus application will be deployed if needed: ✅
 ```
   - tester le déclenchement via Webhook : `curl --json '{"ref": "1.0.4", "ref_type": "tag"}' http://localhost:8080/webhook/event`
 ```bash
@@ -503,6 +508,14 @@ service/quarkus-service   NodePort   X.X.X.X   <none>        80:30080/TCP   3m8s
 $ curl http://xxxx.nodes.c1.xxx.k8s.ovh.net:30080/hello
 
 👋  Hello, World ! 🌍
+```
+  - vérifier le status de la CR: `kubectl get ReleaseDetector/check-quarkus -n test-java-operator-samples -o json | jq '.status'`
+```bash
+$ kubectl get ReleaseDetector/check-quarkus -n test-java-operator-samples -o json | jq '.status'
+
+{
+  "deployedRelase": "1.0.4"
+}
 ```
   - supprimer la CR: `kubectl delete releasedetectors.wilda.fr check-quarkus -n test-java-operator-samples`
   - vérifier que tout a été supprimé:
