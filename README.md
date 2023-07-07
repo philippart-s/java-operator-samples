@@ -565,7 +565,7 @@ spec:
       paths:
       - backend:
           service:
-            name: java-operator-samples-operator
+            name: java-operator-samples
             port:
               number: 80
         path: /
