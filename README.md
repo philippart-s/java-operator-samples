@@ -67,7 +67,7 @@ quarkus.container-image.name=java-operator-samples-operator
 # set to true to automatically apply CRDs to the cluster when they get regenerated
 quarkus.operator-sdk.crd.apply=true
 ```
-  - tester que tout compile que la CRD se génère bien: `mvn clean compile` (ou restez en mode `mvn quarkus:dev` pour voir la magie opérer en direct :wink:)
+  - tester que tout compile et que la CRD se génère bien: `mvn clean compile` (ou restez en mode `mvn quarkus:dev` pour voir la magie opérer en direct :wink:)
   - ⚠️ Il se peut que vous ayez une erreur de la forme : 
 ``` bash
 2023-03-14 08:31:41,865 ERROR [io.jav.ope.Operator] (Quarkus Main Thread) Error starting operator: io.fabric8.kubernetes.client.KubernetesClientException: Operation: [get]  for kind: [CustomResourceDefinition]  with name: [releasedetectors.wilda.fr]  in namespace: [null]  failed.
