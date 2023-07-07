@@ -250,6 +250,8 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
       Deployment existingDeployment = client.apps().deployments().inNamespace(namespace).withName(deployment.getMetadata().getName()).get();
       if (existingDeployment == null) {
         client.apps().deployments().inNamespace(namespace).resource(deployment).create();
+      } else {
+        client.apps().deployments().inNamespace(namespace).resource(deployment).update();
       }
 
       // Create service
@@ -258,6 +260,8 @@ public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
           .withName(service.getMetadata().getName()).get();
       if (existingService == null) {
         client.services().inNamespace(namespace).resource(service).create();
+      } else {
+        client.services().inNamespace(namespace).resource(service).update();
       }
 
       // Update the status
