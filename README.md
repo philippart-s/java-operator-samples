@@ -181,3 +181,276 @@ spec:
   - la sortie de l'opérateur devrait afficher le message `INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler) 👋 Hello, World 🌏! From the Moon 🌕!`
   - supprimer la CR : `kubectl delete releasedetectors.wilda.fr hello-world -n test-hello-world-operator`
   - la sortie de l'opérateur devrait afficher le message `INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler) 🥲  Goodbye, World 🌏! From the Moon 🌕!`
+
+## 🔀 Deploy application
+  - la branche `05-deploy-app` contient le résultat de cette étape
+  - modifier le reconciler `ReleaseDetectorReconciler`:
+```java
+public class ReleaseDetectorReconciler implements Reconciler<ReleaseDetector>,
+    Cleaner<ReleaseDetector>, EventSourceInitializer<ReleaseDetector> {
+  private static final Logger log = LoggerFactory.getLogger(ReleaseDetectorReconciler.class);
+
+  /**
+   * Name of the repository to check.
+   */
+  private String repoName;
+  /**
+   * GitHub organisation name that contains the repository.
+   */
+  private String organisationName;
+  /**
+   * ID of the created custom resource.
+   */
+  private ResourceID resourceID;
+  /**
+   * Current deployed release.
+   */
+  private String currentRelease;
+  /**
+   * Fabric0 kubernetes client.
+   */
+  private final KubernetesClient client;
+
+  @Inject
+  @RestClient
+  private GHService ghService;
+
+  public ReleaseDetectorReconciler(KubernetesClient client) {
+    this.client = client;
+  }
+
+  @Override
+  public Map<String, EventSource> prepareEventSources(EventSourceContext<ReleaseDetector> context) {
+    var poolingEventSource = new PollingEventSource<String, ReleaseDetector>(() -> {
+      log.info("⚡️ Polling data !");
+      if (resourceID != null) {
+        log.info("🚀 Fetch resources !");
+        log.info("🐙 Get the last release version of repository {} in organisation {}.",
+            organisationName, repoName);
+        GitHubRelease gitHubRelease = ghService.getByOrgaAndRepo(organisationName, repoName);
+        log.info("🏷  Last release is {}", gitHubRelease.getTagName());
+        currentRelease = gitHubRelease.getTagName();
+        return Map.of(resourceID, Set.of(currentRelease));
+      } else {
+        log.info("🚫 No resource created, nothing to do.");
+        return Map.of();
+      }
+    }, 30000, String.class);
+
+    return EventSourceInitializer.nameEventSources(poolingEventSource);
+  }
+
+  @Override
+  public UpdateControl<ReleaseDetector> reconcile(ReleaseDetector resource, Context context) {
+    log.info("⚡️ Event occurs ! Reconcile called.");
+
+    String namespace = resource.getMetadata().getNamespace();
+    String statusDeployedRelease = (resource.getStatus() != null ? resource.getStatus().getDeployedRelase() : "");
+
+    // Get configuration
+    resourceID = ResourceID.fromResource(resource);
+    repoName = resource.getSpec().getRepository();
+    organisationName = resource.getSpec().getOrganisation();
+    log.info("⚙️ Configuration values : repository = {}, organisation = {}.", repoName,
+        organisationName);
+
+    if (currentRelease != null && currentRelease.trim().length() != 0 && !currentRelease.equalsIgnoreCase(statusDeployedRelease)) {      
+      // Deploy application
+      log.info("🔀 Deploy the new release {} !", currentRelease);
+      Deployment deployment = makeDeployment(currentRelease, resource);
+      Deployment existingDeployment = client.apps().deployments().inNamespace(namespace).withName(deployment.getMetadata().getName()).get();
+      if (existingDeployment == null) {
+        client.apps().deployments().inNamespace(namespace).resource(deployment).create();
+      }
+
+      // Create service
+      Service service = makeService(resource);
+      Service existingService = client.services().inNamespace(resource.getMetadata().getNamespace())
+          .withName(service.getMetadata().getName()).get();
+      if (existingService == null) {
+        client.services().inNamespace(namespace).resource(service).create();
+      }
+
+      // Update the status
+      if (resource.getStatus() != null) {
+        resource.getStatus().setDeployedRelase(currentRelease);
+      } else {
+        ReleaseDetectorStatus releaseDetectorStatus = new ReleaseDetectorStatus();
+        releaseDetectorStatus.setDeployedRelase(currentRelease);
+        resource.setStatus(releaseDetectorStatus);
+      }
+    }
+
+    return UpdateControl.patchStatus(resource);
+  }
+
+  @Override
+  public DeleteControl cleanup(ReleaseDetector resource, Context<ReleaseDetector> context) {
+    log.info("🗑 Undeploy the application");
+
+    resourceID = null;
+
+    return DeleteControl.defaultDelete();
+  }
+
+  /**
+   * Generate the Kubernetes deployment resource.
+   * 
+   * @param currentRelease The release to deploy
+   * @param releaseDetector The created custom resource
+   * @return The created deployment
+   */
+  private Deployment makeDeployment(String currentRelease, ReleaseDetector releaseDetector) {
+    Deployment deployment = new DeploymentBuilder()
+    .withNewMetadata()
+      .withName("quarkus-deployment")
+      .addToLabels("app", "quarkus")
+    .endMetadata()
+    .withNewSpec()
+      .withReplicas(1)
+      .withNewSelector()
+        .withMatchLabels(Map.of("app", "quarkus"))
+      .endSelector()
+      .withNewTemplate()
+        .withNewMetadata()
+          .addToLabels("app", "quarkus")
+        .endMetadata()
+        .withNewSpec()
+          .addNewContainer()
+            .withName("quarkus")
+            .withImage("wilda/" + repoName + ":" + currentRelease)
+            .addNewPort()
+              .withContainerPort(80)
+            .endPort()
+          .endContainer()
+        .endSpec()
+      .endTemplate()
+    .endSpec()
+    .build();
+
+    deployment.addOwnerReference(releaseDetector);
+
+    log.info("Generated deployment {}", Serialization.asYaml(deployment));
+
+    return deployment;
+  }
+
+  /**
+   * Generate the Kubernetes service resource.
+   * 
+   * @param releaseDetector The custom resource
+   * @return The service.
+   */
+  private Service makeService(ReleaseDetector releaseDetector) {
+    Service service = new ServiceBuilder()
+    .withNewMetadata()
+      .withName("quarkus-service")
+      .addToLabels("app", "quarkus")
+    .endMetadata()
+    .withNewSpec()
+      .withType("NodePort")
+      .withSelector(Map.of("app", "quarkus"))
+      .addNewPort()
+        .withPort(80)
+        .withTargetPort(new IntOrString(8080))
+        .withNodePort(30080)
+      .endPort()
+    .endSpec()
+    .build();
+
+    service.addOwnerReference(releaseDetector);
+
+    log.info("Generated service {}", Serialization.asYaml(service));
+
+    return service;
+  } 
+}
+```
+  - recréer la CR : `kubectl apply -f ./src/test/resources/cr-test-gh-release-watch.yml -n test-java-operator-samples`
+  - la sortie de l'opérateur devrait être:
+```bash
+INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-8) 🚀 Fetch resources !
+INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-8) 🐙 Get the last release version of repository philippart-s in organisation hello-world-from-quarkus.
+INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-8) 🏷  Last release is 1.0.4
+INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler) ⚡️ Event occurs ! Reconcile called.
+INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler) ⚙️ Configuration values : repository = hello-world-from-quarkus, organisation = philippart-s.
+INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler) 🔀 Deploy the new release 1.0.4 !
+INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler) Generated deployment ---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  labels:
+    app: "quarkus"
+  name: "quarkus-deployment"
+  ownerReferences:
+  - apiVersion: "wilda.fr/v1"
+    kind: "ReleaseDetector"
+    name: "check-quarkus"
+    uid: "eadae4da-55a8-4d2b-b989-7a9282231200"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "quarkus"
+  template:
+    metadata:
+      labels:
+        app: "quarkus"
+    spec:
+      containers:
+      - image: "wilda/hello-world-from-quarkus:1.0.4"
+        name: "quarkus"
+        ports:
+        - containerPort: 80
+
+
+2022-08-26 18:27:38,151 INFO  [fr.wil.ReleaseDetectorReconciler] (EventHandler-releasedetectorreconciler) Generated service ---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  labels:
+    app: "quarkus"
+  name: "quarkus-service"
+  ownerReferences:
+  - apiVersion: "wilda.fr/v1"
+    kind: "ReleaseDetector"
+    name: "check-quarkus"
+    uid: "eadae4da-55a8-4d2b-b989-7a9282231200"
+spec:
+  ports:
+  - nodePort: 30080
+    port: 80
+    targetPort: 8080
+  selector:
+    app: "quarkus"
+  type: "NodePort"
+
+
+INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-8) ⚡️ Polling data !
+INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-8) 🚀 Fetch resources !
+INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-8) 🐙 Get the last release version of repository philippart-s in organisation hello-world-from-quarkus.
+INFO  [fr.wil.ReleaseDetectorReconciler] (Timer-8) 🏷  Last release is 1.0.4
+```
+  - vérifier que l'application a été déployée:
+```bash
+$ kubectl get pods,svc -n test-java-operator-samples
+
+NAME                                      READY   STATUS    RESTARTS   AGE
+pod/quarkus-deployment-7b74f6b6ff-2rffc   1/1     Running   0          98s
+
+NAME                      TYPE       CLUSTER-IP    EXTERNAL-IP   PORT(S)        AGE
+service/quarkus-service   NodePort   X.X.X.X   <none>        80:30080/TCP   3m8s
+```
+  - tester l'application :
+```bash
+$ curl http://http://xxxx.nodes.c1.xxx.k8s.ovh.net:30080/hello
+
+👋  Hello, World ! 🌍
+```
+  - supprimer la CR: `kubectl delete releasedetectors.wilda.fr check-quarkus -n test-java-operator-samples`
+  - vérifier que tout a été supprimé:
+```bash
+$ kubectl get pods,svc -n test-java-operator-samples
+
+No resources found in test-hello-world-operator namespace.
+```
